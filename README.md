@@ -50,7 +50,7 @@ related_docs:
 | MQTT | Eclipse Mosquitto 2.x | 设备通信 |
 | 实时通信 | WebSocket (STOMP) | 数据推送 + 聊天 |
 | 硬件主控 | ESP32 (3-5组/大棚) | 传感采集 + 设备控制 |
-| 部署 | Docker Compose + frp | 本地Linux |
+| 部署 | Docker Compose + frp | Windows Docker Desktop(开发)+Linux(部署) |
 
 ---
 
@@ -116,10 +116,10 @@ pnpm dev
 
 ## 开发计划
 
-| Phase | 时间 | 核心任务 |
-|-------|------|----------|
-| Phase 1 | 2026.07-08 | 后端骨架 + 硬件原型 |
-| Phase 2 | 2026.09-10 | APP核心 + AI API接入 + 知识库 |
-| Phase 3 | 2026.11-12 | 多组传感器 + 专家系统 + 权限系统 |
-| Phase 4 | 2027.01-02 | ResNet训练 + Whisper微调 + LSTM |
-| Phase 5 | 2027.03-05 | 部署调试 + 数据收集 + 论文结题 |
+| Phase | 核心任务 |
+|-------|----------|
+| Phase 1 | 后端骨架 + 硬件原型 |
+| Phase 2 | APP核心 + AI API接入 + 知识库 |
+| Phase 3 | 多组传感器 + 专家系统 + 权限系统 |
+| Phase 4 | ResNet训练 + Whisper微调 + LSTM |
+| Phase 5 | 部署调试 + 数据收集 + 论文结题 |

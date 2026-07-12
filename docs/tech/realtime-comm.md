@@ -15,8 +15,10 @@ created: 2026-07-11
 last_modified: 2026-07-11
 author: AI助手
 related_docs:
-  - /document/docs/prd/smart-greenhouse-prd.md
-  - /document/docs/api/api-design.md
+  - /document/docs/prd/dashboard-realtime.md
+  - /document/docs/prd/expert-consultation.md
+  - /document/docs/api/sensor/sensor-api.md
+  - /document/docs/api/chat/chat-api.md
 ---
 
 ## 概述

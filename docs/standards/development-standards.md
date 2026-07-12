@@ -111,7 +111,7 @@ author: AI助手
 | 缩进 | 4个空格，禁止Tab |
 | 网络请求 | Retrofit + OkHttp |
 | 本地存储 | Room |
-| 异步 | Kotlin Coroutines / RxJava |
+| 异步 | Java ExecutorService + Handler |
 | 图片加载 | Glide |
 | WebSocket | STOMP over OkHttp |
 
@@ -274,14 +274,15 @@ author: 作者名                   # 作者
 - 所有文档文件名使用**小写英文+连字符**（kebab-case）
 - 禁止使用中文文件名、空格、大写字母
 - 示例：`development-standards.md`、`test-case-template.md`、`api-design.md`
+- **例外**：项目根目录的 `AI开发规则文档_v2.0.md` 允许使用中文命名（作为最高优先级开发约束文档，独立于文档目录体系）
 
 ### 文档类型及对应目录
 
 | 文档类型 | 目录 | 命名格式 | 示例 |
 |----------|------|----------|------|
-| PRD（产品需求文档） | `document/docs/prd/` | `prd-{模块名}.md` | `prd-device-management.md` |
-| 架构设计 | `document/docs/architecture/` | `arch-{主题}.md` | `arch-system-overview.md` |
-| API文档 | `document/docs/api/` | `api-{模块名}.md` | `api-greenhouse.md` |
+| PRD（产品需求文档） | `document/docs/prd/` | `{功能名}.md` | `dashboard-realtime.md` |
+| 技术方案 | `document/docs/tech/` | `{主题}.md` | `perception-layer.md` |
+| API文档 | `document/docs/api/` | `{模块名}-api.md` | `auth-api.md` |
 | 开发规范 | `document/docs/standards/` | `{规范名}.md` | `development-standards.md` |
 | 测试文档 | `document/docs/test/` | `test-{模块名}.md` | `test-auth-module.md` |
 | 部署文档 | `document/docs/deployment/` | `deploy-guide.md` | `deploy-guide.md` |

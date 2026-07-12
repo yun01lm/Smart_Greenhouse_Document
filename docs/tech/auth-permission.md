@@ -15,8 +15,9 @@ created: 2026-07-11
 last_modified: 2026-07-11
 author: AI助手
 related_docs:
-  - /document/docs/prd/smart-greenhouse-prd.md
-  - /document/docs/api/api-design.md
+  - /document/docs/prd/role-permission.md
+  - /document/docs/api/auth/auth-api.md
+  - /document/docs/api/employee/employee-api.md
 ---
 
 ## 概述

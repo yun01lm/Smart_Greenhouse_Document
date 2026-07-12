@@ -15,8 +15,10 @@ created: 2026-07-11
 last_modified: 2026-07-11
 author: AI助手
 related_docs:
-  - /document/docs/prd/smart-greenhouse-prd.md
-  - /document/docs/api/api-design.md
+  - /document/docs/prd/health-assessment.md
+  - /document/docs/prd/growth-assessment.md
+  - /document/docs/api/health/health-api.md
+  - /document/docs/api/growth/growth-api.md
 ---
 
 ## 概述

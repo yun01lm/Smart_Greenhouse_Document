@@ -26,7 +26,7 @@ author: AI助手
 | CPU | 4核 | 8核+ |
 | 内存 | 8GB | 16GB+ |
 | 磁盘 | 50GB SSD | 100GB+ SSD |
-| 操作系统 | Ubuntu 20.04+ / Debian 11+ | Ubuntu 22.04 LTS |
+| 操作系统 | 开发: Windows 10/11 + Docker Desktop | 部署: Ubuntu 22.04 LTS |
 
 ### 软件依赖
 
