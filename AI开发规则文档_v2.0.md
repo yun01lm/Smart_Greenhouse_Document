@@ -232,39 +232,34 @@ smart-greenhouse/
 │   │   │   ├── controller/
 │   │   │   ├── service/
 │   │   │   └── dto/
-│   │   ├── qa/                                   # C9 RAG问答模块
+│   │   ├── qa/                                   # C9 RAG问答模块 + C10 语音识别
 │   │   │   ├── controller/
 │   │   │   ├── service/
 │   │   │   └── dto/
-│   │   ├── speech/                               # C10 语音识别模块
-│   │   │   ├── controller/
-│   │   │   └── service/
-│   │   ├── websocket/                            # C11 WebSocket推送 + C16 实时聊天
-│   │   │   ├── controller/
+│   │   ├── websocket/                            # C11 WebSocket推送
+│   │   │   ├── handler/
 │   │   │   ├── service/
-│   │   │   └── handler/
+│   │   │   └── dto/
 │   │   ├── file/                                 # C13 文件存储模块
 │   │   │   └── service/
 │   │   ├── weather/                              # C14 天气API对接
-│   │   │   └── service/
-│   │   ├── fusion/                               # C15 多模态融合分析
 │   │   │   ├── controller/
-│   │   │   └── service/
-│   │   ├── chat/                                 # C16 实时聊天模块
+│   │   │   ├── service/
+│   │   │   └── dto/
+│   │   ├── health/                                # C15 多模态融合分析
+│   │   │   ├── controller/
+│   │   │   ├── service/
+│   │   │   └── dto/
+│   │   ├── chat/                                  # C16 实时聊天
 │   │   │   ├── controller/
 │   │   │   ├── service/
 │   │   │   ├── repository/
 │   │   │   └── dto/
-│   │   ├── authorization/                        # C17 专家授权模块
+│   │   ├── expert/                                # C17 专家授权 + 专家管理
 │   │   │   ├── controller/
 │   │   │   ├── service/
-│   │   │   ├── repository/
 │   │   │   └── dto/
 │   │   ├── permission/                           # C18 多角色权限模块
-│   │   │   ├── controller/
-│   │   │   ├── service/
-│   │   │   └── dto/
-│   │   ├── region/                               # C20 地区管理模块
 │   │   │   ├── controller/
 │   │   │   ├── service/
 │   │   │   └── dto/
@@ -273,13 +268,13 @@ smart-greenhouse/
 │   │   │   ├── service/
 │   │   │   ├── repository/
 │   │   │   └── dto/
-│   │   ├── knowledge/                            # 知识库管理
+│   │   ├── knowledge/                            # 知识库管理（Phase 4）
 │   │   │   ├── controller/
 │   │   │   └── service/
-│   │   ├── corpus/                               # 方言语料管理
+│   │   ├── corpus/                               # 方言语料管理（Phase 4）
 │   │   │   ├── controller/
 │   │   │   └── service/
-│   │   └── admin/                                # 管理员功能
+│   │   └── admin/                                # 管理员功能（Phase 4）
 │   │       ├── controller/
 │   │       └── service/
 │   ├── ai/                                       # AI模型抽象层
@@ -295,14 +290,8 @@ smart-greenhouse/
 │   │       └── WhisperSpeechProvider.java
 │   ├── entity/                                   # JPA实体
 │   ├── repository/                               # JPA仓库(通用)
-│   ├── dto/                                      # 通用DTO
 │   ├── exception/                                # 全局异常处理
-│   │   ├── GlobalExceptionHandler.java
-│   │   ├── BusinessException.java
-│   │   └── ErrorCode.java
-│   └── common/                                   # 通用工具
-│       ├── ApiResponse.java                      # 统一响应格式
-│       └── PageResult.java                       # 统一分页格式
+│   │   └── GlobalExceptionHandler.java
 ├── src/main/resources/
 │   ├── application.yml                           # 主配置
 │   ├── application-dev.yml                       # 开发环境
@@ -316,6 +305,8 @@ smart-greenhouse/
 └── pom.xml                                       # Maven配置
 ```
 
+> **关于公共类的说明**：`ApiResponse.java`、`PageResult.java`、`BusinessException.java`、`ErrorCode.java` 等通用类位于独立的 Maven `common` 模块（`common/src/main/java/com/greenhouse/common/`），backend 模块通过 Maven 依赖引用。模块内部的 DTO 按模块内聚原则放在各 `module/{name}/dto/` 子目录下。
+
 ### 3.2 APP端目录结构 (Android)
 
 ```
@@ -326,9 +317,11 @@ app/src/main/java/com/greenhouse/app/
 │   ├── repository/                             # 数据仓库
 │   └── local/                                  # Room本地缓存
 ├── ui/                                         # UI层
-│   ├── dashboard/                              # 实时数据看板
-│   ├── alert/                                  # 环境预警中心
-│   ├── diagnosis/                              # 病虫害诊断
+│   ├── login/                                   # 登录页
+│   ├── common/                                  # 公共UI（MainActivity等）
+│   ├── dashboard/                               # 实时数据看板
+│   ├── alert/                                   # 环境预警中心
+│   ├── diagnosis/                               # 病虫害诊断
 │   ├── growth/                                 # 作物长势评估
 │   ├── qa/                                     # AI智能问答
 │   ├── control/                                # 设备控制

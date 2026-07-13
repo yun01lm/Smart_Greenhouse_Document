@@ -134,7 +134,7 @@ related_docs: []
 
 | ID | 文件 | 类型 | 状态 | 说明 |
 |----|------|------|------|------|
-| DEVLOG-000 | [INDEX.md](./devlog/INDEX.md) | devlog | active | 46个任务总表（全部planned）+ 5个Phase开发顺序 |
+| DEVLOG-000 | [INDEX.md](./devlog/INDEX.md) | devlog | active | 47个任务总表（25已完成 + 22已计划）+ 5个Phase开发顺序 |
 | — | [TASK-TEMPLATE.md](./devlog/TASK-TEMPLATE.md) | devlog | final | 任务日志模板（YAML头部+固定段落） |
 
 ---
@@ -311,7 +311,7 @@ related_docs: []
 
 | 优先级 | 文档 | 路径 | 何时读 |
 |--------|------|------|--------|
-| 🔴 必读 | **AI开发规则** | `项目根目录/AI开发规则文档.md` | 每次开始开发前 |
+| 🔴 必读 | **AI开发规则** | `AI开发规则文档_v2.0.md` | 每次开始开发前 |
 | 🔴 必读 | **INDEX.md** | `document/INDEX.md` | 📍 当前文档，首次进入项目 |
 | 🔴 必读 | **表-模块映射** | [DB-002](./docs/database/table-module-mapping.md) | 需要操作数据库时 |
 | 🟡 按需 | **PRD** | [docs/prd/](./docs/prd/) | 开发某个功能前读对应PRD |
