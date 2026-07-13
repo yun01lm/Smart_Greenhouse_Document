@@ -35,7 +35,7 @@ related_docs: []
 | 🧪 测试 | [docs/test/](./docs/test/) | 1 | 测试用例模板 |
 | 📝 开发日志 | [devlog/](./devlog/) | 2 | 任务跟踪 + 模板 |
 | 📦 变更日志 | [CHANGELOG.md](./CHANGELOG.md) | 1 | 版本变更记录 |
-| 📐 AI开发规则 | 项目根目录 | 1 | AI开发约束（最高优先级） |
+| 📐 AI开发规则 | 项目根目录 | 1 | AI开发约束v2.2（最高优先级） |
 
 ---
 
