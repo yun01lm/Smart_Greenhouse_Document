@@ -695,3 +695,30 @@
 - `app/.../ui/common/MainActivity.java`（修改）
 
 ---
+
+## Step 23: F05 前置重构 — 诊断+问答合并为AI助手 (2026-07-13)
+
+**状态**: ✅ 完成
+
+### 变更说明
+将诊断和问答两个独立Tab合并为"AI助手"Tab，使用 TabLayout + ViewPager2 左右滑动切换。
+
+### 实现内容
+
+#### 1. AI助手容器页
+- `AiAssistantFragment.java`（新建）— FragmentStateAdapter + ViewPager2，内含诊断页(位置0) + 问答页(位置1)
+- `fragment_ai_assistant.xml`（新建）— TabLayout + ViewPager2 布局
+- `ic_ai_assistant.xml`（新建）— AI助手Tab图标
+
+#### 2. 导航调整
+- `MainActivity.java`（修改）— 移除 `nav_diagnosis` 和 `nav_qa` 分支，替换为 `nav_assistant` → AiAssistantFragment
+- `DiagnosisFragment.java` — 不删除，作为 ViewPager2 子页
+- `QaFragment.java` — 不删除，作为 ViewPager2 子页
+
+### 变更文件清单
+- `app/.../ui/assistant/AiAssistantFragment.java`（新建）
+- `app/src/main/res/layout/fragment_ai_assistant.xml`（新建）
+- `app/src/main/res/drawable/ic_ai_assistant.xml`（新建）
+- `app/.../ui/common/MainActivity.java`（修改）
+
+---

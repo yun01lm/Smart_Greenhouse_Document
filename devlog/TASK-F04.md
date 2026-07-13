@@ -122,6 +122,15 @@ GET    /api/qa/history?page=&size=  — 问答历史（分页）
 
 ---
 
+## 变更记录
+
+### Step 23 (2026-07-13): 问答合并到AI助手
+- **MainActivity.java**: QaFragment 不再作为独立Tab，改为 AiAssistantFragment 内 ViewPager2 子页
+- **QaFragment.java**: 代码不变，功能完整保留
+- 变更原因：与诊断合并为"AI助手"统一入口
+
+---
+
 ## 关联任务
 
 - **TASK-C01**（用户认证）：API鉴权依赖

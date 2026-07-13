@@ -79,7 +79,12 @@ related_docs: [PRD-003, API-007]
 
 - **BUILD SUCCESSFUL** ✅
 
-## 六、不开发功能
+## 六、变更记录
+
+### Step 23 (2026-07-13): 诊断合并到AI助手
+- **MainActivity.java**: DiagnosisFragment 不再作为独立Tab，改为 AiAssistantFragment 内 ViewPager2 子页
+- **DiagnosisFragment.java**: 代码不变，功能完整保留
+- 变更原因：与问答合并为"AI助手"统一入口
 
 | 功能 | 说明 |
 |------|------|
