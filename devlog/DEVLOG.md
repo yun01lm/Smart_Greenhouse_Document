@@ -722,3 +722,115 @@
 - `app/.../ui/common/MainActivity.java`（修改）
 
 ---
+
+## Step 24: F05 设备控制模块开发 (2026-07-13)
+
+**状态**: ✅ 完成
+
+### 功能概述
+开发APP端设备控制模块，支持单设备开关控制和一键场景联动。包含5种设备类型（通风风机/电动卷帘/遮阳网/滴灌阀门/补光灯）和4种预设场景（高温通风/阴天补光/缺水灌溉/夜间保温）。
+
+### 实现内容
+
+#### 1. 数据模型层
+- `ActuatorInfo.java` — 执行器设备模型（名称/类型/状态/在线/区域/心跳），含 `getTypeName()`、`getTypeIconRes()` 辅助方法
+- `SceneInfo.java` — 场景联动模型（名称/操作列表/启用状态），含 `getActionsSummary()` 生成操作摘要
+- `ControlResponse.java` — 控制响应模型（支持单设备+场景执行两种响应），含 `getResultText()` 结果描述
+- `ControlRequest.java` — 单设备控制请求（actuatorId + action + greenhouseId）
+- `SceneExecuteRequest.java` — 场景执行请求（greenhouseId）
+
+#### 2. ViewModel层
+- `ControlViewModel.java` — 核心逻辑：
+  - `loadDevices(long greenhouseId)` — 加载设备列表
+  - `loadScenes(long greenhouseId)` — 加载场景列表
+  - `controlActuator(ActuatorInfo, String action)` — 单设备开关控制（ON/OFF）
+  - `executeScene(SceneInfo)` — 执行场景联动，汇总成功/失败数量
+
+#### 3. RecyclerView适配器
+- `DeviceAdapter.java` — 设备列表适配器：
+  - 设备类型图标 + 名称 + 区域 + 在线状态（绿色运行中/灰色停止/红色离线）
+  - Switch 开关按钮，离线设备禁用
+- `SceneAdapter.java` — 场景横向列表适配器：
+  - 场景卡片：名称 + 操作摘要 + "一键执行"按钮
+
+#### 4. UI层
+- `ControlFragment.java` — 设备控制主页面：
+  - 顶部：横向场景联动列表
+  - 下方：设备列表（ScrollView包裹）
+  - Toast 操作结果反馈
+  - 空状态提示（暂无设备/暂无场景）
+
+#### 5. 布局文件
+- `fragment_control.xml` — 主页面布局（ScrollView + 场景RecyclerView + 设备RecyclerView）
+- `item_device_control.xml` — 设备控制卡片（CardView + 图标 + 名称 + 区域 + Switch）
+- `item_scene.xml` — 场景卡片（CardView + 名称 + 摘要 + 执行按钮）
+
+#### 6. 资源文件
+- `ic_control.xml` — 设备控制Tab图标
+- `ic_device_fan.xml` — 通风风机图标
+- `ic_device_roller.xml` — 电动卷帘图标
+- `ic_device_shade.xml` — 遮阳网图标
+- `ic_device_valve.xml` — 滴灌阀门图标
+- `ic_device_light.xml` — 补光灯图标
+- `ic_device_default.xml` — 默认设备图标
+
+#### 7. 网络层
+- `GreenhouseApiService.java`（修改）— 新增接口：
+  - `POST control/actuator` — 控制单个设备
+  - `GET control/scenes` — 获取场景列表
+  - `POST control/scenes/{id}/execute` — 执行场景
+  - `GET devices/actuators` — 获取设备列表
+- `GreenhouseRepository.java`（修改）— 新增4个仓库方法
+
+#### 8. 导航集成
+- `MainActivity.java`（修改）— 新增 `nav_control` → ControlFragment
+
+### 开发规范遵循
+- ✅ ViewModel不含Context，所有网络请求在Repository ExecutorService子线程
+- ✅ Activity/Fragment纯展示，业务逻辑在ViewModel
+- ✅ RecyclerView多布局模式（设备列表+场景横向列表）
+- ✅ Switch状态管理避免循环触发（setOnCheckedChangeListener(null) 后重新设置）
+- ✅ Toast操作结果反馈
+
+### 变更文件清单
+- `app/.../data/model/ActuatorInfo.java`（新增）
+- `app/.../data/model/SceneInfo.java`（新增）
+- `app/.../data/model/ControlResponse.java`（新增）
+- `app/.../data/model/ControlRequest.java`（新增）
+- `app/.../data/model/SceneExecuteRequest.java`（新增）
+- `app/.../viewmodel/ControlViewModel.java`（新增）
+- `app/.../adapter/DeviceAdapter.java`（新增）
+- `app/.../adapter/SceneAdapter.java`（新增）
+- `app/.../ui/control/ControlFragment.java`（新增）
+- `app/src/main/res/layout/fragment_control.xml`（新增）
+- `app/src/main/res/layout/item_device_control.xml`（新增）
+- `app/src/main/res/layout/item_scene.xml`（新增）
+- `app/src/main/res/drawable/ic_control.xml`（新增）
+- `app/src/main/res/drawable/ic_device_fan.xml`（新增）
+- `app/src/main/res/drawable/ic_device_roller.xml`（新增）
+- `app/src/main/res/drawable/ic_device_shade.xml`（新增）
+- `app/src/main/res/drawable/ic_device_valve.xml`（新增）
+- `app/src/main/res/drawable/ic_device_light.xml`（新增）
+- `app/src/main/res/drawable/ic_device_default.xml`（新增）
+- `app/.../data/api/GreenhouseApiService.java`（修改）
+- `app/.../data/repository/GreenhouseRepository.java`（修改）
+- `app/.../ui/common/MainActivity.java`（修改）
+
+---
+
+## Step 25: 底部导航重构为4Tab (2026-07-13)
+
+**状态**: ✅ 完成
+
+### 变更说明
+底部导航从5Tab重构为4Tab：看板(含预警) / AI助手(诊断+问答) / 设备控制 / 我的。
+
+### 实现内容
+- `bottom_nav_menu.xml`（重写）— 4个菜单项：nav_dashboard / nav_assistant / nav_control / nav_profile
+- `strings.xml`（修改）— tab_assistant="AI助手"、tab_control="设备控制"，移除旧的 tab_alert/tab_diagnosis/tab_qa
+
+### 变更文件清单
+- `app/src/main/res/menu/bottom_nav_menu.xml`（修改）
+- `app/src/main/res/values/strings.xml`（修改）
+
+---
