@@ -43,7 +43,7 @@ author: AI助手
 | TASK-C21 | 自定义预警阈值开发 | C21 自定义阈值 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-C21.md](./TASK-C21.md) |
 | TASK-C22 | 作物生长周期管理开发 | C22 生长周期 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-C22.md](./TASK-C22.md) |
 | TASK-F01 | 实时数据看板开发 | F1 APP看板 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-F01.md](./TASK-F01.md) |
-| TASK-F02 | 环境预警中心开发 | F2 APP预警 | planned | - | - | - | 否 | - |
+| TASK-F02 | 环境预警中心开发 | F2 APP预警 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-F02.md](./TASK-F02.md) |
 | TASK-F03 | 病虫害诊断模块开发 | F3 APP诊断 | planned | - | - | - | 否 | - |
 | TASK-F04 | AI智能问答模块开发 | F4 APP问答 | planned | - | - | - | 否 | - |
 | TASK-F05 | 设备控制模块开发 | F5 APP控制 | planned | - | - | - | 否 | - |
@@ -81,9 +81,9 @@ author: AI助手
 | ESP32固件任务 | 2 |
 | Docker部署任务 | 1 |
 | 文档编写任务 | 1 |
-| 已完成 | 24 |
+| 已完成 | 25 |
 | 进行中 | 0 |
-| 已计划 | 23 |
+| 已计划 | 22 |
 | 被阻塞 | 0 |
 
 ---
