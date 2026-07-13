@@ -28,8 +28,8 @@ author: AI助手
 | TASK-C06 | 环境预警引擎开发 | C6 环境预警 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤12 |
 | TASK-C07 | 设备控制模块开发 | C7 设备控制 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤10 |
 | TASK-C08 | 图片诊断模块开发 | C8 图片诊断 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤13 |
-| TASK-C09 | RAG问答模块开发 | C9 RAG问答 | planned | - | - | - | 否 | - |
-| TASK-C10 | 语音识别模块开发 | C10 语音识别 | planned | - | - | - | 否 | - |
+| TASK-C09 | RAG问答模块开发 | C9 RAG问答 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤14 |
+| TASK-C10 | 语音识别模块开发 | C10 语音识别 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤14 |
 | TASK-C11 | WebSocket推送模块开发 | C11 WebSocket推送 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤9 |
 | TASK-C12 | 场景联动引擎开发 | C12 场景联动 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤10 |
 | TASK-C13 | 文件存储模块开发 | C13 文件存储 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤13 |
@@ -81,9 +81,9 @@ author: AI助手
 | ESP32固件任务 | 2 |
 | Docker部署任务 | 1 |
 | 文档编写任务 | 1 |
-| 已完成 | 15 |
+| 已完成 | 17 |
 | 进行中 | 0 |
-| 已计划 | 32 |
+| 已计划 | 30 |
 | 被阻塞 | 0 |
 
 ---
