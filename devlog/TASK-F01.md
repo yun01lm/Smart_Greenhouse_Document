@@ -93,3 +93,11 @@ Android APP 编译通过（app-debug.apk, 7.2MB）。MVVM 架构完整：View(Ac
 - 关联DEVLOG：步骤18
 - 编译环境：Linux + Android SDK 34 + Gradle 8.5
 - 数据模拟脚本（sensor_simulator.py）配套提供测试数据
+
+## 变更记录
+
+### Step 22 (2026-07-13): 预警合并到看板
+- **fragment_dashboard.xml**: 传感器列表上方新增"预警中心"入口卡片（CardView）
+- **DashboardFragment.java**: 添加预警入口点击跳转（→ AlertFragment, addToBackStack）
+- **MainActivity.java**: 移除独立预警Tab，预警通过看板入口访问
+- 变更原因：为设备控制模块(F05)腾出底部导航位置

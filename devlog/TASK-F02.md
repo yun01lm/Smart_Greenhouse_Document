@@ -83,6 +83,16 @@ related_docs: [PRD-002, API-005]
 - **BUILD SUCCESSFUL** ✅
 - 修复问题：`fragment_alert.xml` 中 `android:chipBackgroundColor` → `app:chipBackgroundColor`（Material Chip 属性需使用 app 前缀）
 
+## 六、变更记录
+
+### Step 22 (2026-07-13): 预警合并到看板
+- **变更内容**: AlertFragment 从独立Tab变为看板内嵌入口访问
+- **MainActivity.java**: 移除 `nav_alert` Tab分支，不再作为独立底部导航Tab
+- **fragment_dashboard.xml**: 新增"预警中心"入口卡片
+- **DashboardFragment.java**: 点击入口卡片 → 跳转 AlertFragment（addToBackStack）
+- **AlertFragment.java**: 代码不变，功能完整保留
+- 变更原因：为设备控制模块(F05)腾出底部导航位置
+
 ## 六、API 对接
 
 | API 端点 | 方法 | 用途 |

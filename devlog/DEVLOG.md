@@ -671,3 +671,27 @@
 - `app/.../ui/common/MainActivity.java`（修改）
 
 ---
+
+## Step 22: F05 前置重构 — 预警合并到看板 (2026-07-13)
+
+**状态**: ✅ 完成
+
+### 变更说明
+为给设备控制模块(F05)腾出底部导航位置，将预警功能从独立Tab合并到看板页面。
+
+### 实现内容
+
+#### 1. 看板页面增加预警入口
+- `fragment_dashboard.xml`（修改）— 传感器列表上方新增"预警中心"入口卡片（CardView），含图标+标题+摘要+箭头
+- `DashboardFragment.java`（修改）— 入口卡片点击后通过 FragmentManager 跳转到 AlertFragment（addToBackStack 支持返回）
+
+#### 2. 导航栏简化
+- `MainActivity.java`（修改）— 移除 `nav_alert` 的 Fragment 切换分支，AlertFragment 不再作为独立Tab
+- `AlertFragment.java` — 不删除，保留完整功能，通过看板入口访问
+
+### 变更文件清单
+- `app/src/main/res/layout/fragment_dashboard.xml`（修改）
+- `app/.../ui/dashboard/DashboardFragment.java`（修改）
+- `app/.../ui/common/MainActivity.java`（修改）
+
+---
