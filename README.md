@@ -42,7 +42,7 @@ related_docs:
 |------|------|------|
 | Android APP | Java + MVVM + Jetpack | target SDK 34 |
 | Web管理端 | Vue 3 + Element Plus | Composition API |
-| 后端 | Spring Boot 3.3.x (Java 17+) | API Only |
+| 后端 | Spring Boot 3.3.5 (Java 21) | API Only |
 | AI框架 | Spring AI 1.0.9 | RAG + LLM调用 |
 | 关系数据库 | MySQL 8.0 | 业务数据 |
 | 时序数据库 | InfluxDB 2.7 | 传感器数据 |
@@ -116,10 +116,12 @@ pnpm dev
 
 ## 开发计划
 
-| Phase | 核心任务 |
-|-------|----------|
-| Phase 1 | 后端骨架 + 硬件原型 |
-| Phase 2 | APP核心 + AI API接入 + 知识库 |
-| Phase 3 | 多组传感器 + 专家系统 + 权限系统 |
-| Phase 4 | ResNet训练 + Whisper微调 + LSTM |
-| Phase 5 | 部署调试 + 数据收集 + 论文结题 |
+| Phase | 状态 | 核心任务 |
+|-------|------|----------|
+| Phase 1 | ✅ 完成 | 后端骨架 + 全部 22 个业务模块 |
+| Phase 2 | 🔄 进行中 | APP 核心功能（4/11 完成：看板/预警/诊断/个人中心） |
+| Phase 3 | ⏳ 待开始 | AI 能力对接 + 专家系统 |
+| Phase 4 | ⏳ 待开始 | Web 管理端 + ResNet 训练 |
+| Phase 5 | ⏳ 待开始 | 部署调试 + 文档 + 论文 |
+
+> 详细进度：[devlog/INDEX.md](./devlog/INDEX.md)（26/47 任务完成）

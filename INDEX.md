@@ -33,7 +33,7 @@ related_docs: []
 | 📏 开发规范 | [docs/standards/](./docs/standards/) | 1 | 编码/Git/文档规范 |
 | 🚀 部署运维 | [docs/deployment/](./docs/deployment/) | 2 | 部署指南 + 运维手册 |
 | 🧪 测试 | [docs/test/](./docs/test/) | 1 | 测试用例模板 |
-| 📝 开发日志 | [devlog/](./devlog/) | 2 | 任务跟踪 + 模板 |
+| 📝 开发日志 | [devlog/](./devlog/) | 3 | 任务跟踪 + 开发日志 + 模板 |
 | 📦 变更日志 | [CHANGELOG.md](./CHANGELOG.md) | 1 | 版本变更记录 |
 | 📐 AI开发规则 | 项目根目录 | 1 | AI开发约束v2.2（最高优先级） |
 
@@ -134,7 +134,8 @@ related_docs: []
 
 | ID | 文件 | 类型 | 状态 | 说明 |
 |----|------|------|------|------|
-| DEVLOG-000 | [INDEX.md](./devlog/INDEX.md) | devlog | active | 47个任务总表（25已完成 + 22已计划）+ 5个Phase开发顺序 |
+| DEVLOG-000 | [INDEX.md](./devlog/INDEX.md) | devlog | active | 47个任务总表（26已完成 + 21已计划）+ 5个Phase开发顺序 |
+| DEVLOG-001 | [DEVLOG.md](./devlog/DEVLOG.md) | devlog | active | 项目总开发日志，按步骤记录开发过程 |
 | — | [TASK-TEMPLATE.md](./devlog/TASK-TEMPLATE.md) | devlog | final | 任务日志模板（YAML头部+固定段落） |
 
 ---
