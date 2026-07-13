@@ -20,27 +20,27 @@ author: AI助手
 
 | 任务ID | 标题 | 模块 | 状态 | 开始时间 | 完成时间 | 负责人 | 阻塞标志 | 关联文档 |
 |--------|------|------|------|----------|----------|--------|----------|----------|
-| TASK-C01 | 用户认证模块开发 | C1 用户认证 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤4 |
-| TASK-C02 | 设备管理模块开发 | C2 设备管理 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤6 |
-| TASK-C03 | 大棚管理模块开发 | C3 大棚管理 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤5 |
-| TASK-C04 | MQTT消费模块开发 | C4 MQTT消费 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤8 |
-| TASK-C05 | 时序数据服务开发 | C5 时序数据 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤8 |
-| TASK-C06 | 环境预警引擎开发 | C6 环境预警 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤12 |
-| TASK-C07 | 设备控制模块开发 | C7 设备控制 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤10 |
-| TASK-C08 | 图片诊断模块开发 | C8 图片诊断 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤13 |
-| TASK-C09 | RAG问答模块开发 | C9 RAG问答 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤14 |
-| TASK-C10 | 语音识别模块开发 | C10 语音识别 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤14 |
-| TASK-C11 | WebSocket推送模块开发 | C11 WebSocket推送 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤9 |
-| TASK-C12 | 场景联动引擎开发 | C12 场景联动 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤10 |
-| TASK-C13 | 文件存储模块开发 | C13 文件存储 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤13 |
+| TASK-C01 | 用户认证模块开发 | C1 用户认证 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C01.md](./TASK-C01.md) |
+| TASK-C02 | 设备管理模块开发 | C2 设备管理 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C02.md](./TASK-C02.md) |
+| TASK-C03 | 大棚管理模块开发 | C3 大棚管理 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C03.md](./TASK-C03.md) |
+| TASK-C04 | MQTT消费模块开发 | C4 MQTT消费 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C04.md](./TASK-C04.md) |
+| TASK-C05 | 时序数据服务开发 | C5 时序数据 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C05.md](./TASK-C05.md) |
+| TASK-C06 | 环境预警引擎开发 | C6 环境预警 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-C06.md](./TASK-C06.md) |
+| TASK-C07 | 设备控制模块开发 | C7 设备控制 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C07.md](./TASK-C07.md) |
+| TASK-C08 | 图片诊断模块开发 | C8 图片诊断 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-C08.md](./TASK-C08.md) |
+| TASK-C09 | RAG问答模块开发 | C9 RAG问答 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-C09.md](./TASK-C09.md) |
+| TASK-C10 | 语音识别模块开发 | C10 语音识别 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-C10.md](./TASK-C10.md) |
+| TASK-C11 | WebSocket推送模块开发 | C11 WebSocket推送 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C11.md](./TASK-C11.md) |
+| TASK-C12 | 场景联动引擎开发 | C12 场景联动 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C12.md](./TASK-C12.md) |
+| TASK-C13 | 文件存储模块开发 | C13 文件存储 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-C13.md](./TASK-C13.md) |
 | TASK-C14 | 天气API对接开发 | C14 天气API | planned | - | - | - | 否 | - |
 | TASK-C15 | 多模态融合分析开发 | C15 多模态融合 | planned | - | - | - | 否 | - |
 | TASK-C16 | 实时聊天模块开发 | C16 实时聊天 | planned | - | - | - | 否 | - |
 | TASK-C17 | 专家授权模块开发 | C17 专家授权 | planned | - | - | - | 否 | - |
-| TASK-C18 | 多角色权限模块开发 | C18 多角色权限 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤7 |
-| TASK-C19 | 设备分组管理开发 | C19 设备分组 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤6 |
-| TASK-C20 | 地区管理模块开发 | C20 地区管理 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | DEVLOG-步骤5 |
-| TASK-C21 | 自定义预警阈值开发 | C21 自定义阈值 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | DEVLOG-步骤12 |
+| TASK-C18 | 多角色权限模块开发 | C18 多角色权限 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C18.md](./TASK-C18.md) |
+| TASK-C19 | 设备分组管理开发 | C19 设备分组 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C19.md](./TASK-C19.md) |
+| TASK-C20 | 地区管理模块开发 | C20 地区管理 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-C20.md](./TASK-C20.md) |
+| TASK-C21 | 自定义预警阈值开发 | C21 自定义阈值 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-C21.md](./TASK-C21.md) |
 | TASK-C22 | 作物生长周期管理开发 | C22 生长周期 | planned | - | - | - | 否 | - |
 | TASK-F01 | 实时数据看板开发 | F1 APP看板 | planned | - | - | - | 否 | - |
 | TASK-F02 | 环境预警中心开发 | F2 APP预警 | planned | - | - | - | 否 | - |
