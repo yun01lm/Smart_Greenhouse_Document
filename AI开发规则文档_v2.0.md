@@ -66,7 +66,7 @@ AI分析需求，列出执行计划（步骤清单）
 
 | 序号 | 文件 | 位置 | 说明 |
 |------|------|------|------|
-| 1 | **DEVLOG.md** | `Smart_Greenhouse_Project/devlog/DEVLOG.md` | 项目总开发日志，追加步骤条目 |
+| 1 | **DEVLOG.md** | `document/devlog/DEVLOG.md` | 项目总开发日志，追加步骤条目 |
 | 2 | **INDEX.md** | `document/devlog/INDEX.md` | 任务总表，更新任务状态和统计 |
 | 3 | **TASK-xxx.md** | `document/devlog/TASK-xxx.md` | 对应模块独立日志，记录关键修改 |
 | 4 | **受影响模块日志** | `document/devlog/TASK-yyy.md` | 如有跨模块修改，同步更新被影响模块的日志 |

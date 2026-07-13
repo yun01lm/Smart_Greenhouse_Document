@@ -586,3 +586,88 @@
   - `app/src/main/AndroidManifest.xml`（修改）
 
 ---
+
+## Step 21: F04 AI智能问答模块开发 (2026-07-13)
+
+**状态**: ✅ 完成
+
+### 功能概述
+开发APP端AI智能问答模块，支持文字提问和语音输入两种方式，集成RAG知识检索与TTS语音播报。
+
+### 实现内容
+
+#### 1. 数据模型层
+- `app/.../data/model/QaRequest.java` — 文字问答请求模型（question + greenhouseId）
+- `app/.../data/model/QaResponse.java` — 问答响应模型，含SourceInfo内部类（title/category来源引用）、isVoiceInput()辅助方法
+- `app/.../data/model/QaHistoryItem.java` — 历史记录模型，含isVoiceInput()标识
+
+#### 2. ViewModel层（纯业务逻辑，无Context依赖）
+- `app/.../viewmodel/QaViewModel.java` — 核心逻辑：
+  - `askQuestion(String)` — 文字问答，自动追加用户消息+AI回复到聊天列表
+  - `askVoice(File)` — 语音问答，Multipart上传音频文件
+  - `loadHistory()` / `loadMoreHistory()` — 分页加载历史记录
+  - `speakAnswer(String)` — TTS语音播报（通过TextToSpeech，由Fragment注入）
+  - ChatMessage内部类：TYPE_USER（用户绿色气泡）、TYPE_AI（AI白色气泡）、TYPE_ERROR（红色错误提示）
+
+#### 3. RecyclerView适配器
+- `app/.../adapter/ChatAdapter.java` — 多ViewType聊天适配器：
+  - UserViewHolder：绿色气泡右对齐，支持语音输入提示
+  - AiViewHolder：白色气泡左对齐，支持来源引用展开+TTS播放按钮
+  - ErrorViewHolder：居中红色错误文本
+
+#### 4. UI层（纯展示，业务逻辑在ViewModel）
+- `app/.../ui/qa/QaFragment.java` — 智能问答主页面：
+  - EditText输入框 + 发送按钮
+  - MediaRecorder语音录制（AAC格式），AndroidX ActivityResultContracts.RequestPermission权限申请
+  - TextToSpeech初始化（中文Locale），注入ViewModel
+  - RecyclerView自动滚动到最新消息
+- 布局文件：`fragment_qa.xml`、`item_chat_bubble_user.xml`、`item_chat_bubble_ai.xml`、`item_chat_bubble_error.xml`
+
+#### 5. 资源文件
+- `ic_mic.xml` — 麦克风图标
+- `ic_send.xml` — 发送图标
+- `ic_volume_up.xml` — 音量/TTS图标
+- `bg_chat_bubble_user.xml` — 用户气泡背景（绿色圆角）
+- `bg_chat_bubble_ai.xml` — AI气泡背景（白色圆角）
+- `bg_input_qa.xml` — 输入区域背景
+
+#### 6. 网络层
+- `GreenhouseApiService.java`（修改）— 新增接口：
+  - `POST /api/qa/ask` — 文字问答
+  - `POST /api/qa/ask/voice` (@Multipart) — 语音问答
+  - `GET /api/qa/history` — 问答历史（分页）
+- `GreenhouseRepository.java`（修改）— 新增 ask/askVoice/getQaHistory 仓库方法
+
+#### 7. 导航集成
+- `MainActivity.java`（修改）— QA Tab导航到QaFragment
+
+### 开发规范遵循
+- ✅ ViewModel不含Context/ContentResolver，TTS由Fragment注入
+- ✅ 网络请求在ExecutorService后台线程（Repository层）
+- ✅ Activity/Fragment纯展示，业务逻辑在ViewModel
+- ✅ 权限申请使用AndroidX ActivityResultContracts API
+- ✅ 语音录制使用系统MediaRecorder（AAC格式），TTS使用系统TextToSpeech
+- ✅ RecyclerView多ViewType模式，支持聊天消息差异化展示
+
+### 变更文件清单
+- `app/.../data/model/QaRequest.java`（新增）
+- `app/.../data/model/QaResponse.java`（新增）
+- `app/.../data/model/QaHistoryItem.java`（新增）
+- `app/.../viewmodel/QaViewModel.java`（新增）
+- `app/.../adapter/ChatAdapter.java`（新增）
+- `app/.../ui/qa/QaFragment.java`（新增）
+- `app/src/main/res/layout/fragment_qa.xml`（新增）
+- `app/src/main/res/layout/item_chat_bubble_user.xml`（新增）
+- `app/src/main/res/layout/item_chat_bubble_ai.xml`（新增）
+- `app/src/main/res/layout/item_chat_bubble_error.xml`（新增）
+- `app/src/main/res/drawable/ic_mic.xml`（新增）
+- `app/src/main/res/drawable/ic_send.xml`（新增）
+- `app/src/main/res/drawable/ic_volume_up.xml`（新增）
+- `app/src/main/res/drawable/bg_chat_bubble_user.xml`（新增）
+- `app/src/main/res/drawable/bg_chat_bubble_ai.xml`（新增）
+- `app/src/main/res/drawable/bg_input_qa.xml`（新增）
+- `app/.../data/api/GreenhouseApiService.java`（修改）
+- `app/.../data/repository/GreenhouseRepository.java`（修改）
+- `app/.../ui/common/MainActivity.java`（修改）
+
+---
