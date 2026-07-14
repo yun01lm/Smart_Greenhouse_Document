@@ -48,7 +48,7 @@ author: AI助手
 | TASK-F04 | AI智能问答模块开发 | F4 APP问答 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-F04.md](./TASK-F04.md) |
 | TASK-F05 | 设备控制模块开发 | F5 APP控制 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-F05.md](./TASK-F05.md) |
 | TASK-F06 | 历史数据模块开发 | F6 APP历史 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-F06.md](./TASK-F06.md) |
-| TASK-F07 | 作物长势评估开发 | F7 APP长势 | planned | - | - | - | 否 | - |
+| TASK-F07 | 作物长势评估开发 | F7 APP长势 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-F07.md](./TASK-F07.md) |
 | TASK-F08 | 多模态健康评分开发 | F8 APP健康评分 | planned | - | - | - | 否 | - |
 | TASK-F09 | 个人中心模块开发 | F9 APP个人中心 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-F09.md](./TASK-F09.md) |
 | TASK-F10 | 专家咨询模块开发 | F10 APP专家咨询 | planned | - | - | - | 否 | - |
@@ -81,9 +81,9 @@ author: AI助手
 | ESP32固件任务 | 2 |
 | Docker部署任务 | 1 |
 | 文档编写任务 | 1 |
-| 已完成 | 29 |
+| 已完成 | 30 |
 | 进行中 | 0 |
-| 已计划 | 18 |
+| 已计划 | 17 |
 | 被阻塞 | 0 |
 
 ---

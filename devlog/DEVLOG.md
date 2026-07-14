@@ -901,3 +901,79 @@
 - `app/src/main/AndroidManifest.xml`（修改）
 
 ---
+
+## Step 27: F07 作物长势评估模块开发 (2026-07-13)
+
+**状态**: ✅ 完成
+
+### 开发前决策记录 (2026-07-13)
+- **功能裁剪决定**: 本次开发核心4项功能（截帧查看/生长阶段识别/长势特征评估/种植周期信息），"长势历史对比"和"生长时间线"标记为 Phase 5 完善项，"多模态融合评分"留给 F08
+- **入口方式**: 看板页增加"长势评估"入口卡片，与历史数据/预警中心并排（三列布局），点击跳转 GrowthActivity
+- **图表**: 不需要图表库，纯信息展示页面（图片+指标卡片）
+
+### 功能概述
+开发APP端作物长势评估模块，展示摄像头截帧图片、AI识别的生长阶段、株高/叶面积/叶色等长势特征，以及当前种植周期信息。
+
+### 实现内容
+
+#### 1. 数据模型层
+- `GrowthAssessment.java` — 长势评估结果模型，含 getHealthLevel()（5级评分）/getHealthLevelColor()（绿蓝黄橙红）/getPlantHeightText() 等辅助方法
+- `GrowthImage.java` — 截帧图片模型（imagePath/capturedAt/resolution/fileSize），含 getFileSizeText() 文件大小格式化
+
+#### 2. API接口
+- `GreenhouseApiService.java`（修改）— 新增3个接口：
+  - `GET growth/latest` — 最新长势评估
+  - `GET growth/history` — 长势历史（分页）
+  - `GET growth/images` — 截帧图片列表（分页，按日期）
+
+#### 3. Repository层
+- `GreenhouseRepository.java`（修改）— 新增4个仓库方法：
+  - `getLatestGrowthAssessment()` / `getGrowthHistory()` / `getGrowthImages()` / `getCropCycles()`
+
+#### 4. ViewModel层
+- `GrowthViewModel.java` — 核心逻辑：
+  - `loadLatestAssessment()` — 加载最新长势评估
+  - `refreshHistory()` / `loadMoreHistory()` — 历史记录分页
+  - `refreshImages()` / `loadMoreImages()` — 截帧图片分页
+  - `loadCropCycles()` — 加载种植周期，自动选中第一个活跃周期
+  - `loadAll()` — 一次加载全部数据（看板入口触发）
+
+#### 5. UI层
+- `GrowthActivity.java` — 长势评估展示页面（AppCompatActivity）：
+  - 顶部 Toolbar + 返回按钮
+  - 长势评估卡片：生长阶段（大字）+ 健康评分圆形指示器 + 株高/叶面积/叶色三列指标 + 评估时间
+  - 截帧监控卡片：图片数量统计 + 最新截帧时间 + 分辨率/文件大小 + FFmpeg说明
+  - 种植周期卡片：作物名称（品种）+ 状态标签 + 种植日期/已种植天数/当前阶段（阶段来源）
+  - 无数据空状态提示
+  - Toast错误提示
+
+#### 6. 布局文件
+- `activity_growth.xml` — ScrollView + 三组 CardView 卡片布局
+- `ic_growth.xml` — 叶子形状长势评估图标
+
+#### 7. 看板入口重构
+- `fragment_dashboard.xml`（修改）— 入口卡片从两列改为三列（长势评估 + 历史数据 + 预警中心），每列垂直布局（图标+标题+副标题）
+- `DashboardFragment.java`（修改）— 新增长势评估入口点击 → Intent 跳转 GrowthActivity
+
+#### 8. Manifest注册
+- `AndroidManifest.xml`（修改）— 注册 GrowthActivity，parentActivityName = MainActivity
+
+### 开发规范遵循
+- ✅ ViewModel不含Context，所有网络请求在Repository ExecutorService子线程
+- ✅ Activity纯展示，业务逻辑在ViewModel
+- ✅ 数据模型使用 @SerializedName 映射后端字段名
+- ✅ 空状态处理（无评估数据、无种植周期时显示提示）
+- ✅ 分页加载支持（历史记录 + 截帧图片）
+
+### 变更文件清单
+- `app/.../data/model/GrowthAssessment.java`（新增）
+- `app/.../data/model/GrowthImage.java`（新增）
+- `app/.../viewmodel/GrowthViewModel.java`（新增）
+- `app/.../ui/growth/GrowthActivity.java`（新增）
+- `app/src/main/res/layout/activity_growth.xml`（新增）
+- `app/src/main/res/drawable/ic_growth.xml`（新增）
+- `app/.../data/api/GreenhouseApiService.java`（修改）
+- `app/.../data/repository/GreenhouseRepository.java`（修改）
+- `app/.../ui/dashboard/DashboardFragment.java`（修改）
+- `app/src/main/res/layout/fragment_dashboard.xml`（修改）
+- `app/src/main/AndroidManifest.xml`（修改）

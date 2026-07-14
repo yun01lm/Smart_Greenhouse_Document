@@ -106,3 +106,8 @@ Android APP 编译通过（app-debug.apk, 7.2MB）。MVVM 架构完整：View(Ac
 - **fragment_dashboard.xml**: 预警卡片和历史数据卡片改为并排布局（各50%宽度）
 - **DashboardFragment.java**: 新增历史数据入口点击 → Intent 跳转 HistoryActivity
 - 变更原因：新增F06历史数据模块入口
+
+### Step 27 (2026-07-13): 长势评估入口
+- **fragment_dashboard.xml**: 入口卡片从两列改为三列布局（长势评估 + 历史数据 + 预警中心），每列改为垂直布局（图标+标题+副标题）
+- **DashboardFragment.java**: 新增长势评估入口点击 → Intent 跳转 GrowthActivity
+- 变更原因：新增F07作物长势评估模块入口
