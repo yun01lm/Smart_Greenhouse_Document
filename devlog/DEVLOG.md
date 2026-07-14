@@ -834,3 +834,70 @@
 - `app/src/main/res/values/strings.xml`（修改）
 
 ---
+
+## Step 26: F06 历史数据模块开发 (2026-07-13)
+
+**状态**: ✅ 完成
+
+### 功能概述
+开发APP端历史数据查询模块，支持11种传感器类型选择、4档时间范围切换，通过MPAndroidChart LineChart展示趋势曲线图（平均值/最大值/最小值三条线）。
+
+### 实现内容
+
+#### 1. 数据模型层
+- `HistoryDataPoint.java` — 历史数据点模型（time/avg/min/max），含 `getValue()` 辅助方法
+- `HistoryResponse.java` — 查询响应模型（greenhouseId/sensorType/aggregation/unit/dataPoints），含 `getSensorTypeName()` 传感器中文名 + `getUnitText()` 单位
+
+#### 2. ViewModel层
+- `HistoryViewModel.java` — 核心逻辑：
+  - 内置11种传感器类型（TEMP/HUMIDITY/LIGHT/CO2/O2/SOIL_TEMP/SOIL_HUMIDITY/EC/N/P/K）
+  - `selectSensorType(String)` — 切换传感器类型
+  - `selectTimeRange(String)` — 切换时间范围（1h/24h/7d/30d）
+  - `loadHistory()` — 自动计算startTime/endTime/aggregation，调用API查询
+  - 聚合粒度自动匹配：1h→1m, 24h→30m, 7d→6h, 30d→1d
+  - `SensorTypeItem` 内部类（code + name + unit）
+
+#### 3. UI层
+- `HistoryActivity.java` — 历史数据趋势图页面：
+  - Toolbar 返回按钮
+  - Spinner 传感器类型选择器（11种）
+  - ChipGroup 时间范围切换（1h/24h/7d/30d）
+  - MPAndroidChart LineChart：3条线（平均值蓝色实线 + 最大值红色虚线 + 最小值绿色虚线）
+  - X轴时间标签自动格式化（短时间HH:mm，长时间MM/dd）
+  - 图表支持缩放/拖拽
+
+#### 4. 布局文件
+- `activity_history.xml` — Toolbar + Spinner + ChipGroup + LineChart + ProgressBar
+
+#### 5. 看板入口
+- `fragment_dashboard.xml`（修改）— 预警卡片和历史数据卡片改为并排布局（各占50%宽度）
+- `DashboardFragment.java`（修改）— 新增历史数据入口点击 → Intent 跳转 HistoryActivity
+- `ic_history.xml`（新建）— 历史数���图标
+
+#### 6. 网络层
+- `GreenhouseApiService.java`（修改）— 新增 `GET sensors/history` 接口
+- `GreenhouseRepository.java`（修改）— 新增 `getHistory()` 方法
+
+#### 7. Manifest注册
+- `AndroidManifest.xml`（修改）— 注册 HistoryActivity
+
+### 开发规范遵循
+- ✅ ViewModel不含Context，所有网络请求在Repository ExecutorService子线程
+- ✅ Activity纯展示，业务逻辑在ViewModel
+- ✅ 图表配置在Activity中完成（UI层职责）
+- ✅ 时间计算在ViewModel中完成（业务逻辑层职责）
+
+### ��更文件清单
+- `app/.../data/model/HistoryDataPoint.java`（新增）
+- `app/.../data/model/HistoryResponse.java`（新增）
+- `app/.../viewmodel/HistoryViewModel.java`（新增）
+- `app/.../ui/history/HistoryActivity.java`（新增）
+- `app/src/main/res/layout/activity_history.xml`（新增）
+- `app/src/main/res/drawable/ic_history.xml`（新增）
+- `app/.../data/api/GreenhouseApiService.java`（修改）
+- `app/.../data/repository/GreenhouseRepository.java`（修改）
+- `app/.../ui/dashboard/DashboardFragment.java`（修改）
+- `app/src/main/res/layout/fragment_dashboard.xml`（修改）
+- `app/src/main/AndroidManifest.xml`（修改）
+
+---

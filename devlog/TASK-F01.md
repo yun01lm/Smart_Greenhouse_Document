@@ -101,3 +101,8 @@ Android APP 编译通过（app-debug.apk, 7.2MB）。MVVM 架构完整：View(Ac
 - **DashboardFragment.java**: 添加预警入口点击跳转（→ AlertFragment, addToBackStack）
 - **MainActivity.java**: 移除独立预警Tab，预警通过看板入口访问
 - 变更原因：为设备控制模块(F05)腾出底部导航位置
+
+### Step 26 (2026-07-13): 历史数据入口
+- **fragment_dashboard.xml**: 预警卡片和历史数据卡片改为并排布局（各50%宽度）
+- **DashboardFragment.java**: 新增历史数据入口点击 → Intent 跳转 HistoryActivity
+- 变更原因：新增F06历史数据模块入口
