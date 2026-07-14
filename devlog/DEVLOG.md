@@ -1243,3 +1243,30 @@
   - `web/src/views/dashboard/TrendChart.vue`（新建）
   - `web/src/views/dashboard/HealthScore.vue`（新建）
   - `web/src/views/dashboard/AlertList.vue`（新建）
+
+---
+
+## 2026-07-14
+
+### 步骤33：TASK-G02 设备管理界面开发 | ✅ 完成
+
+- **时间**：14:30
+- **需求**：Web 端设备管理界面，包含设备列表（表格+筛选+CRUD）和设备分组管理（分组树+设备分配）
+- **后端API对接**：
+  - 设备 CRUD：`/api/v1/greenhouses/{id}/devices`（GET列表/POST创建/PUT更新/DELETE删除）
+  - 分组管理：`/api/v1/greenhouses/{id}/device-groups`（GET列表/POST创建/PUT更新/DELETE删除）
+  - 分组设备分配：`POST /device-groups/{groupId}/devices/{deviceId}` 添加、`DELETE` 移除
+- **设计决策**：
+  - Tab 切换结构：设备列表 + 设备分组两个 Tab
+  - 设备列表：支持类型筛选(SENSOR/CONTROLLER)、状态筛选(ONLINE/OFFLINE/ALARM)、关键词搜索
+  - 设备分组：左侧分组列表（可创建/编辑/删除）+ 右侧组内设备详情（穿梭框分配设备）
+  - 前端分页：默认 10 条/页，支持 10/20/50 切换
+  - 表单校验：设备名称、编号、类型必填；传感器类型条件必填
+- **结果**：构建成功（vite build），5 个文件新建，2 个文件修改
+- **变更文件清单**：
+  - `web/src/api/device.js`（新建）— 设备 + 分组全部 12 个 API 封装
+  - `web/src/views/devices/DevicePage.vue`（新建）— Tab 容器页
+  - `web/src/views/devices/DeviceList.vue`（新建）— 设备列表（表格+筛选+CRUD对话框）
+  - `web/src/views/devices/DeviceGroup.vue`（新建）— 分组管理（列表+详情+穿梭框分配）
+  - `web/src/router/index.js`（修改）— 注册 /devices 路由
+  - `web/src/layouts/MainLayout.vue`（修改）— 启用"设备管理"菜单项
