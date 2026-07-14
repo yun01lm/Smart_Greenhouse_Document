@@ -1312,3 +1312,4 @@
   - `web/src/views/users/RoleOverview.vue`（新建）
   - `web/src/router/index.js`（修改）— 注册 /users 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用"用户管理"菜单项
+- **Bug 修复（自检发现）**：AdminService.updateUser/deleteUser 的"不能操作自己"逻辑无效——`user.getId()` 永远等于 `userId`。修复为 Controller 通过 SecurityContext 传入当前用户 ID。
