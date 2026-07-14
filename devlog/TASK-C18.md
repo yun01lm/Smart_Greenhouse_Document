@@ -76,3 +76,4 @@ C18 多角色权限是智慧大棚AIoT系统的核心后端模块，属于Phase 
 
 - 完成日期：2026-07-12
 - 关联DEVLOG：步骤7
+- **G03 变更（2026-07-14）**：SecurityConfig 新增 `/api/v1/admin/**` 路径的 `hasRole('ADMIN')` 限制

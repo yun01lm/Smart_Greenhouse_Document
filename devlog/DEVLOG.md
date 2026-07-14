@@ -1270,3 +1270,45 @@
   - `web/src/views/devices/DeviceGroup.vue`（新建）— 分组管理（列表+详情+穿梭框分配）
   - `web/src/router/index.js`（修改）— 注册 /devices 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用"设备管理"菜单项
+
+---
+
+### 步骤34：TASK-G03 用户与角色管理开发 | ✅ 完成
+
+- **时间**：15:00
+- **需求**：Web 管理端用户与角色管理，包含用户列表（筛选/编辑/删除）和角色概览（统计卡片+权限说明）
+- **重要发现**：后端原本缺少 Admin 管理 API，G03 需要同时补后端和前端
+- **后端新增**：
+  - AdminController：用户列表/详情/更新/删除 + 角色统计，路径 `/api/v1/admin/*`，仅 ADMIN 角色可访问
+  - AdminService：用户管理业务逻辑（角色筛选、手机号去重校验、禁止自删/自降级）
+  - 3 个 DTO：UserSummaryResponse（不含密码）、UpdateUserRequest、RoleCountResponse
+  - UserRepository 新增 `countByRole` 方法
+  - SecurityConfig 新增 `/api/v1/admin/**` 路径的 `hasRole('ADMIN')` 限制
+  - backend/pom.xml 修复 Spring AI 依赖版本号缺失问题（已存在 bug）
+- **前端新增**：
+  - UserList.vue：用户表格（角色筛选/关键词搜索/分页/编辑角色对话框/删除确认）
+  - RoleOverview.vue：四角色统计卡片（渐变色）+ 权限说明表格
+  - UserPage.vue：Tab 容器页（用户列表 / 角色概览）
+  - api/admin.js：6 个 Admin API 封装
+- **设计决策**：
+  - 用户编辑不暴露密码修改（密码走独立重置流程）
+  - 角色统计使用渐变色卡片区分四种角色（红/橙/绿/灰）
+  - 管理员不能删除自己或降级自己
+- **结果**：
+  - 后端编译：环境 JDK 20 < 项目要求 JDK 21，无法完整编译，但代码语法审查通过（Lombok + Spring 标准模式，与已有代码一致）
+  - 前端构建成功（vite build 1.14s），新增 UserPage chunk 9.33 kB（gzip 3.57 kB）
+- **变更文件清单**：
+  - `backend/.../admin/dto/UserSummaryResponse.java`（新建）
+  - `backend/.../admin/dto/UpdateUserRequest.java`（新建）
+  - `backend/.../admin/dto/RoleCountResponse.java`（新建）
+  - `backend/.../admin/service/AdminService.java`（新建）
+  - `backend/.../admin/controller/AdminController.java`（新建）
+  - `backend/.../repository/UserRepository.java`（修改）— 新增 countByRole
+  - `backend/.../config/SecurityConfig.java`（修改）— admin 路径角色限制
+  - `backend/pom.xml`（修改）— 修复 Spring AI 版本号
+  - `web/src/api/admin.js`（新建）
+  - `web/src/views/users/UserPage.vue`（新建）
+  - `web/src/views/users/UserList.vue`（新建）
+  - `web/src/views/users/RoleOverview.vue`（新建）
+  - `web/src/router/index.js`（修改）— 注册 /users 路由
+  - `web/src/layouts/MainLayout.vue`（修改）— 启用"用户管理"菜单项

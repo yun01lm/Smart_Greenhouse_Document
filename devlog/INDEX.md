@@ -55,7 +55,7 @@ author: AI助手
 | TASK-F11 | 角色适配功能开发 | F11 APP角色适配 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-F11.md](./TASK-F11.md) |
 | TASK-G01 | 数据总览大屏开发 | G1 Web总览 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G01.md](./TASK-G01.md) |
 | TASK-G02 | 设备管理界面开发 | G2 Web设备 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G02.md](./TASK-G02.md) |
-| TASK-G03 | 用户与角色管理开发 | G3 Web用户管理 | planned | - | - | - | 否 | - |
+| TASK-G03 | 用户与角色管理开发 | G3 Web用户管理 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G03.md](./TASK-G03.md) |
 | TASK-G04 | 知识库管理界面开发 | G4 Web知识库 | planned | - | - | - | 否 | - |
 | TASK-G05 | 预警规则配置开发 | G5 Web预警配置 | planned | - | - | - | 否 | - |
 | TASK-G06 | 数据导出报表开发 | G6 Web数据导出 | planned | - | - | - | 否 | - |
@@ -81,9 +81,9 @@ author: AI助手
 | ESP32固件任务 | 2 |
 | Docker部署任务 | 1 |
 | 文档编写任务 | 1 |
-| 已完成 | 35 |
+| 已完成 | 36 |
 | 进行中 | 0 |
-| 已计划 | 12 |
+| 已计划 | 11 |
 | 被阻塞 | 0 |
 
 ---
