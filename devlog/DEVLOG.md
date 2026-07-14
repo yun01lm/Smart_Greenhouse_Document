@@ -1194,3 +1194,52 @@
   - `document/devlog/TASK-C07.md`（修改，补充遗漏条目）
   - `document/devlog/TASK-C11.md`（修改，修正标记）
   - `document/devlog/TASK-C21.md`（修改，补充遗漏条目）
+
+### 步骤32：G01 数据总览大屏开发 | ✅ 完成
+
+- **时间**：2026-07-14
+- **操作**：
+  - **项目骨架**：Vue 3 (Composition API) + Vite + Element Plus + ECharts 5 + Axios + Vue Router 4 + Pinia
+  - **登录页面**：`Login.vue` — 用户名/密码登录，表单校验，对接 `POST /api/v1/auth/login`
+  - **Auth Store**：Pinia 状态管理，Token 持久化到 localStorage，401 自动跳转登录页
+  - **Axios 封装**：请求拦截器自动附加 Bearer Token，响应拦截器统一错误处理
+  - **路由**：Vue Router hash 模式，路由守卫（未登录→登录页，已登录→首页）
+  - **主布局**：`MainLayout.vue` — 顶部导航栏（大棚选择器 + 用户信息 + 退出）+ 左侧菜单（10 个模块入口，当前仅"数据总览"启用）+ 右侧内容区
+  - **传感器卡片**：`SensorCards.vue` — 8 个传感器指标（温度/湿度/CO₂/光照/土壤温度/土壤湿度/土壤pH/风速），颜色编码 + 正常/偏低/偏高状态标签
+  - **趋势曲线图**：`TrendChart.vue` — ECharts 双轴折线图（温度橙色 + 湿度蓝色），面积渐变填充，近 24h 数据，自动适配暗色主题
+  - **健康评分**：`HealthScore.vue` — 大号评分数字（绿/蓝/黄/红）+ 环境/视觉两个进度条
+  - **预警列表**：`AlertList.vue` — 最新 5 条预警（严重/警告/提示三级），左边框颜色区分，未读数量角标
+  - **天气卡片**：展示当前温度/天气描述/湿度/风速
+  - **实时推送**：WebSocket STOMP 客户端（`websocket.js`）— 自动连接/心跳/重连，接收传感器实时数据更新
+  - **数据获取**：DashboardPage 使用 `Promise.allSettled` 并发请求 5 个 API + 30s 轮询兜底
+  - **Vite 配置**：开发代理 `/api` → `localhost:8080`，`/ws` WebSocket 代理
+- **设计决策**：
+  - 技术栈：Vue 3 Composition API + Element Plus（用户指定）
+  - 暗色大屏风格：深蓝渐变背景 + 半透明毛玻璃卡片
+  - 双通道数据：REST API 并发加载 + WebSocket 实时推送 + 30s 轮询兜底
+  - 路由懒加载：所有页面组件使用动态 import()
+  - 左侧菜单：G02-G10 菜单项预设为 disabled，后续逐步启用
+- **结果**：构建成功（vite build），19 个文件，dist 产物约 2.3MB（gzip 约 540KB）
+- **变更文件清单**：
+  - `web/package.json`（新建）
+  - `web/vite.config.js`（新建）
+  - `web/index.html`（新建）
+  - `web/src/main.js`（新建）
+  - `web/src/App.vue`（新建）
+  - `web/src/assets/main.css`（新建）
+  - `web/src/router/index.js`（新建）
+  - `web/src/stores/auth.js`（新建）
+  - `web/src/utils/request.js`（新建）
+  - `web/src/utils/websocket.js`（新建）
+  - `web/src/api/greenhouse.js`（新建）
+  - `web/src/api/sensor.js`（新建）
+  - `web/src/api/health.js`（新建）
+  - `web/src/api/alert.js`（新建）
+  - `web/src/api/weather.js`（新建）
+  - `web/src/views/Login.vue`（新建）
+  - `web/src/layouts/MainLayout.vue`（新建）
+  - `web/src/views/dashboard/DashboardPage.vue`（新建）
+  - `web/src/views/dashboard/SensorCards.vue`（新建）
+  - `web/src/views/dashboard/TrendChart.vue`（新建）
+  - `web/src/views/dashboard/HealthScore.vue`（新建）
+  - `web/src/views/dashboard/AlertList.vue`（新建）
