@@ -99,4 +99,6 @@ vite v8.1.4 building for production...
 - `dist/assets/UserPage-B0vp-DjW.js` (9.33 kB / gzip: 3.57 kB)
 
 ### 后端
-环境 JDK 20 < 项目要求 JDK 21，无法完整编译。代码语法审查通过（Lombok + Spring 标准模式，与已有代码一致）。
+~~环境 JDK 20 < 项目要求 JDK 21，无法完整编译。代码语法审查通过（Lombok + Spring 标准模式，与已有代码一致）。~~
+
+**步骤35 已完全解决**：安装 JDK 21 + 修复 Spring AI 版本 + 修复 6 个项目已有编译错误，`mvn compile` 通过（BUILD SUCCESS）。详见 DEVLOG 步骤35。

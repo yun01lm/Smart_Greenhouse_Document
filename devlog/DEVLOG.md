@@ -1313,3 +1313,38 @@
   - `web/src/router/index.js`（修改）— 注册 /users 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用"用户管理"菜单项
 - **Bug 修复（自检发现）**：AdminService.updateUser/deleteUser 的"不能操作自己"逻辑无效——`user.getId()` 永远等于 `userId`。修复为 Controller 通过 SecurityContext 传入当前用户 ID。
+
+---
+
+### 步骤35：全项目编译修复 — JDK 21 + 依赖 + 6个编译错误 | ✅ 完成
+
+- **时间**：15:30
+- **背景**：G03 自检后发现后端无法 Maven 编译。逐层排查发现 JDK 版本、依赖版本、代码 bug 三类问题。
+- **修复内容**：
+
+**环境层：**
+  - 安装 JDK 21 (Zulu 21.0.1) 替代 JDK 20（项目要求 java.version=21）
+  - `pom.xml`：Spring AI 版本 1.0.9→1.0.0-M6（1.0.9 在 Maven Central 不存在）
+  - `common/pom.xml`：新增 `spring-data-commons` 依赖（PageResult 使用 `org.springframework.data.domain.Page`）
+
+**代码层（6 个已有编译错误）：**
+
+| # | 文件 | 问题 | 修复 |
+|---|------|------|------|
+| 1 | `GlobalExceptionHandler.java` | import 包路径缺少 `.web` | `org.springframework.bind.annotation` → `org.springframework.web.bind.annotation` |
+| 2 | `SensorDataService.java` | 导入了不存在的 InfluxDB 旧版 API | 删除未使用的 `com.influxdb.query.dsl.Flux` 和 `Restrictions` |
+| 3 | `MqttSubscriber.java` | `MqttMessage` 未 import | 新增 `org.eclipse.paho.client.mqttv3.MqttMessage` |
+| 4 | `AlertEngine.java` | `Alert.AlertLevel` 与 `AlertRule.AlertLevel` 类型不匹配 | `level` 变量声明改为 `AlertRule.AlertLevel` |
+| 5 | `ChatService.java` | `getRealtimeData()` 缺少第2个参数 `greenhouseName` | 注入 `GreenhouseRepository` 获取温室名称传入 |
+| 6 | `ChromaRetrievalService.java` | `parseQueryResponse()` 抛出 checked `Exception` 未处理 | 新增 `catch (Exception e)` 兜底返回空列表 |
+
+- **结果**：`mvn compile -pl common,backend` **编译通过（BUILD SUCCESS）**，零错误零警告
+- **变更文件清单**：
+  - `pom.xml`（修改）— Spring AI 版本修复
+  - `common/pom.xml`（修改）— 新增 spring-data-commons
+  - `backend/.../exception/GlobalExceptionHandler.java`（修改）— 包路径修复
+  - `backend/.../sensor/service/SensorDataService.java`（修改）— 删除无效 import
+  - `backend/.../mqtt/MqttSubscriber.java`（修改）— 补充 import
+  - `backend/.../alert/service/AlertEngine.java`（修改）— 类型修复
+  - `backend/.../chat/service/ChatService.java`（修改）— 参数补齐
+  - `backend/.../qa/service/ChromaRetrievalService.java`（修改）— 异常处理
