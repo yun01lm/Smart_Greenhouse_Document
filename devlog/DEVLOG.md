@@ -1159,3 +1159,38 @@
   - `app/.../ui/control/ControlFragment.java`（修改，+角色权限判断）
   - `app/.../ui/profile/ProfileFragment.java`（修改，+applyRoleAdapter）
   - `app/.../ui/common/MainActivity.java`（修改，+applyRoleTabFilter）
+
+### 步骤31：全项目审查 + 修复不一致 | ✅ 完成
+
+- **时间**：2026-07-14
+- **操作**：
+  - **全项目审查**：对后端 152 个 Java 文件 + APP 端 83 个 Java 文件做逐模块交叉比对（DEVLOG ↔ TASK-xxx ↔ 实际代码）
+  - **后端修复（4 处）**：
+    - TASK-C07.md：补充遗漏的 `ControlLogRepository.java` 条目
+    - TASK-C21.md：补充遗漏的 `UserAlertThresholdRepository.java` 条目
+    - TASK-C11.md：修正 `WebSocketConfig.java` 类型标记（"新建"→"修改"）
+    - TASK-C05.md：修正目标描述（时序数据无 JPA 实体，使用 InfluxDB）
+  - **APP 端修复（3 处）**：
+    - 创建缺失的 `ic_alert_level_info.xml` + `ic_alert_level_warning.xml` 预警级别图标
+    - 补充 `POST /expert/authorize/request` API 封装：新增 `RequestAuthorizationRequest` 模型 + `requestAuthorization()` 接口方法 + Repository 方法
+    - DEVLOG 步骤21/29 `ic_send.xml` 重复记录确认为低优先级（F04 QA 和 F10 聊天各自独立创建了 send 图标，路径相同）
+  - **ProfileFragment 无 ViewModel**：确认 ProfileFragment 职责简单（仅展示用户信息 + 跳转入口），直接使用 TokenManager 即可，无需 ViewModel
+  - **启动图标**：mipmap-anydpi-v26 自适应图标对 Android 8.0+ 已足够，低版本使用默认图标
+- **审查结论**：
+  - DEVLOG.md 记录准确率：100%（所有列出的文件均存在）
+  - TASK-Cxx.md 记录准确率：修复后达到 100%
+  - API 方法覆盖：修复后 45/45 全覆盖
+  - Activity 注册：11/11 全部对应 Java + 布局
+  - ViewModel 使用：10/10 全部有对应组件
+  - Drawable 引用：全部存在
+  - 构建状态：BUILD SUCCESSFUL
+- **变更文件清单**：
+  - `app/.../data/model/RequestAuthorizationRequest.java`（新增）
+  - `app/.../data/api/GreenhouseApiService.java`（修改，+1 API 端点）
+  - `app/.../data/repository/GreenhouseRepository.java`（修改，+1 方法）
+  - `app/src/main/res/drawable/ic_alert_level_info.xml`（新增）
+  - `app/src/main/res/drawable/ic_alert_level_warning.xml`（新增）
+  - `document/devlog/TASK-C05.md`（修改，修正目标描述）
+  - `document/devlog/TASK-C07.md`（修改，补充遗漏条目）
+  - `document/devlog/TASK-C11.md`（修改，修正标记）
+  - `document/devlog/TASK-C21.md`（修改，补充遗漏条目）

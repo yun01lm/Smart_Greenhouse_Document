@@ -50,6 +50,7 @@ C21 自定义阈值是智慧大棚AIoT系统的核心后端模块，属于Phase 
 | 文件路径 | 修改类型 | 变更说明 |
 |----------|----------|----------|
 | `entity/UserAlertThreshold.java` | 新建 | DB第25号表，minThreshold/maxThreshold
+| `repository/UserAlertThresholdRepository.java` | 新建 | JPA Repository，按userId+greenhouseId+sensorType查询
 | `module/alert/service/AlertThresholdService.java` | 新建 | 设置（Upsert）/列表/删除
 - 2个DTO：ThresholdRequest、ThresholdResponse
 - 集成到AlertEngine：检查系统规则的同时检查用户自定义阈值

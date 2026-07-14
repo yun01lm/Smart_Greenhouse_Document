@@ -50,7 +50,7 @@ C11 WebSocket推送是智慧大棚AIoT系统的核心后端模块，属于Phase 
 | 文件路径 | 修改类型 | 变更说明 |
 |----------|----------|----------|
 | `module/websocket/handler/StompAuthInterceptor.java` | 新建 | STOMP CONNECT JWT认证拦截器
-| `config/WebSocketConfig.java` | 新建 | 重写，注册认证拦截器，/topic + /queue消息代理
+| `config/WebSocketConfig.java` | 修改 | 注册认证拦截器，/topic + /queue消息代理（在步骤3基础上重写）
 | `module/websocket/service/RealtimePushService.java` | 新建 | 统一推送：pushSensorData/pushDeviceStatus/pushAlert
 - 3个消息DTO：RealtimeMessage、DeviceStatusMessage、AlertPushMessage
 - 修改：MqttSubscriber（加推送调用）、SensorDataService（updateDeviceStatus返回设备名）
