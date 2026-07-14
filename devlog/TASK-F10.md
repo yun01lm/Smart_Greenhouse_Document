@@ -152,3 +152,4 @@ PENDING ──同意──→ APPROVED (7天有效期) ──到期──→ EXP
 - 关联DEVLOG：步骤29
 - 用户明确要求：功能不裁剪，全部完整开发
 - 后续联调：需要后端 C16（实时聊天）和 C17（专家授权）模块运行
+- 步骤31审查修复：补充缺失的 POST /expert/authorize/request API 封装（RequestAuthorizationRequest + requestAuthorization 方法）

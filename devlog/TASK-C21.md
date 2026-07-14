@@ -73,3 +73,4 @@ C21 自定义阈值是智慧大棚AIoT系统的核心后端模块，属于Phase 
 
 - 完成日期：2026-07-13
 - 关联DEVLOG：步骤12
+- 步骤31审查修复：关键修改表中补充遗漏的 UserAlertThresholdRepository.java
