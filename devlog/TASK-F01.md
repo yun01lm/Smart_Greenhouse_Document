@@ -111,3 +111,8 @@ Android APP 编译通过（app-debug.apk, 7.2MB）。MVVM 架构完整：View(Ac
 - **fragment_dashboard.xml**: 入口卡片从两列改为三列布局（长势评估 + 历史数据 + 预警中心），每列改为垂直布局（图标+标题+副标题）
 - **DashboardFragment.java**: 新增长势评估入口点击 → Intent 跳转 GrowthActivity
 - 变更原因：新增F07作物长势评估模块入口
+
+### Step 28 (2026-07-13): 健康评分入口
+- **fragment_dashboard.xml**: 顶部健康评分 CardView 增加 id（card_health_score）和 clickable 属性
+- **DashboardFragment.java**: 健康评分卡片 → 可点击 → Intent 跳转 HealthActivity
+- 变更原因：新增F08多模态健康评分详情页入口

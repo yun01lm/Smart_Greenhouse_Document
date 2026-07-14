@@ -977,3 +977,90 @@
 - `app/.../ui/dashboard/DashboardFragment.java`（修改）
 - `app/src/main/res/layout/fragment_dashboard.xml`（修改）
 - `app/src/main/AndroidManifest.xml`（修改）
+
+---
+
+## Step 28: F08 多模态健康评分模块开发 (2026-07-13)
+
+**状态**: ✅ 完成
+
+### 开发前决策记录 (2026-07-13)
+- **功能整合**: F07 推迟的"多模态融合健康综合评分"(F-004-05) 纳入本次 F08，与 PRD-011 重合，不额外重复开发
+- **功能裁剪**: 本次开发6项核心功能（综合评分/子维度明细/历史趋势/环境分析/长势分析/报告展示），PDF 导出推迟到 Phase 5
+- **入口方式**: 看板顶部健康评分摘要卡片 → 改为可点击 → 跳转 HealthActivity
+- **图表**: 评分历史趋势使用 MPAndroidChart 折线图，7天/30天时间范围切换
+- **报告**: 页面内展示完整报告内容，不做 PDF 文件导出
+
+### 功能概述
+开发 APP 端多模态健康评分详情页，展示综合健康评分（环境+视觉融合）、子维度评分明细、历史趋势图、环境/长势分析、健康评估报告。
+
+### 实现内容
+
+#### 1. 数据模型层
+- `HealthScoreData.java`（重写）— 扩展为完整健康评分模型：
+  - 综合评分字段（overallScore/level/levelColor/envScore/visualScore/weatherRisk）
+  - `AnalysisDetail` 内部类（envDetail + visualDetail + weatherImpact）
+  - `EnvDetail`：温度/湿度/CO₂/土壤 各子项评分+评论
+  - `VisualDetail`：叶片健康/生长速度/病害风险 各子项评分+评论
+  - `WeatherImpact`：当前天气/预报/风险评估
+  - 辅助方法：getOverallScoreInt() / getLevelColorInt() / hasAnalysisDetail()
+
+#### 2. API接口
+- `GreenhouseApiService.java`（修改）— 新增 `GET health/detail/{id}` 端点
+
+#### 3. Repository层
+- `GreenhouseRepository.java`（修改）— 新增 2 个方法：
+  - `getHealthDetail()` — 获取评分详情报告
+  - `getHealthHistory()` — 获取历史评分（分页）
+
+#### 4. ViewModel层
+- `HealthViewModel.java`（新增）— 核心逻辑：
+  - `loadCurrentScore()` — 加载综合评分，自动触发详情加载
+  - `loadDetailReport(scoreId)` — 加载分析详情（含 analysisJson）
+  - `selectTimeRange(range)` — 切换 7天/30天 时间范围
+  - `refreshHistory()` / `loadMoreHistory()` — 历史评分分页
+  - `loadAll()` — 一次加载全部数据
+
+#### 5. UI层
+- `HealthActivity.java`（新增）— 6 大功能区域：
+  - **综合评分大卡片**：64sp 大数字 + 等级标签 + 颜色编码 + 评估时间
+  - **子维度评分三列**：环境健康(40%) / 长势健康(40%) / 天气风险(修正因子)
+  - **评分趋势图**：MPAndroidChart 3 线图（综合评分绿色实线 / 环境蓝色虚线 / 长势橙色虚线），ChipGroup 切换 7天/30天
+  - **环境健康度分析**：温度/湿度/CO₂/土壤 四项评分徽章 + 评论
+  - **长势健康度分析**：叶片健康/生长速度/病害风险 三项评分徽章 + 评论
+  - **健康评估报告**：天气影响 + 改善建议（页面展示）
+
+#### 6. 布局文件
+- `activity_health.xml` — ScrollView + 6组 CardView 卡片
+- `bg_score_badge.xml` — 评分徽章圆角背景
+- `bg_dim_score.xml` — 子维度圆形评分背景
+- `bg_level_tag.xml` — 等级标签圆角背景
+
+#### 7. 看板入口
+- `fragment_dashboard.xml`（修改）— 顶部健康评分 CardView 增加 id 和 clickable 属性
+- `DashboardFragment.java`（修改）— 新增加健康评分卡片点击 → Intent 跳转 HealthActivity
+
+#### 8. Manifest注册
+- `AndroidManifest.xml`（修改）— 注册 HealthActivity
+
+### 开发规范遵循
+- ✅ ViewModel不含Context，网络请求在Repository ExecutorService子线程
+- ✅ Activity纯展示，业务逻辑在ViewModel
+- ✅ 数据模型使用 @SerializedName 映射后端字段名
+- ✅ 空状态处理（无分析数据时隐藏对应卡片）
+- ✅ 分页加载支持（历史评分）
+- ✅ 评分颜色编码（绿80+ / 蓝60-79 / 黄40-59 / 红<40）
+
+### 变更文件清单
+- `app/.../data/model/HealthScoreData.java`（重写）
+- `app/.../viewmodel/HealthViewModel.java`（新增）
+- `app/.../ui/health/HealthActivity.java`（新增）
+- `app/src/main/res/layout/activity_health.xml`（新增）
+- `app/src/main/res/drawable/bg_score_badge.xml`（新增）
+- `app/src/main/res/drawable/bg_dim_score.xml`（新增）
+- `app/src/main/res/drawable/bg_level_tag.xml`（新增）
+- `app/.../data/api/GreenhouseApiService.java`（修改）
+- `app/.../data/repository/GreenhouseRepository.java`（修改）
+- `app/.../ui/dashboard/DashboardFragment.java`（修改）
+- `app/src/main/res/layout/fragment_dashboard.xml`（修改）
+- `app/src/main/AndroidManifest.xml`（修改）
