@@ -1064,3 +1064,98 @@
 - `app/.../ui/dashboard/DashboardFragment.java`（修改）
 - `app/src/main/res/layout/fragment_dashboard.xml`（修改）
 - `app/src/main/AndroidManifest.xml`（修改）
+
+### 步骤29：F10 专家咨询模块开发 | ✅ 完成
+
+- **时间**：2026-07-14
+- **操作**：
+  - **数据模型层**（8个文件）：ExpertInfo、ConversationInfo、ChatMessage（含 SnapshotData 内部类）、CreateConversationRequest、SendMessageRequest、SnapshotRequest、AuthorizationInfo、UnreadResponse
+  - **WebSocket 层**：StompClient — 基于 OkHttp WebSocket 的轻量 STOMP 协议实现，支持 CONNECT/SUBSCRIBE/SEND/MESSAGE/DISCONNECT 帧，含 10s 心跳
+  - **API 层**：GreenhouseApiService 新增 17 个端点（聊天7个 + 专家授权6个 + 专家列表1个 + 未读消息1个 + 对话管理2个）
+  - **Repository 层**：GreenhouseRepository 新增 17 个对应方法
+  - **ViewModel 层**：ExpertViewModel — 双通道设计（REST API 保证送达 + WebSocket STOMP 实时通信），WebSocket 不可用时自动降级到 REST 3s 轮询
+  - **Adapter 层**（3个）：ExpertAdapter（专家列表）、ChatMessageAdapter（多 ViewType：TEXT_LEFT/RIGHT + IMAGE_LEFT/RIGHT + SNAPSHOT）、AuthorizationAdapter（待处理/已授权双模式）
+  - **Activity 层**（3个）：ExpertListActivity（专家列表 + 求助对话框）、ChatActivity（聊天界面：文字/图片/视频/环境快照发送）、AuthorizationActivity（TabLayout + ViewPager2 授权管理）
+  - **Fragment 层**（2个）：PendingAuthorizationFragment、ActiveAuthorizationFragment
+  - **入口**：ProfileFragment 新增"专家咨询"+"授权管理"两个入口按钮
+  - **依赖**：build.gradle 新增 viewpager2 依赖
+  - **ApiClient**：新增 getBaseUrl() / getAuthToken() 静态方法供 WebSocket 连接使用
+- **设计决策**：
+  - 双通道方案：REST API 作为主要保证送达通道，WebSocket STOMP 作为实时增强通道
+  - STOMP 自实现：不引入第三方 STOMP 库，使用 OkHttp WebSocket + 手写帧解析
+  - 图片/视频消息通过 Multipart 上传，环境快照为卡片式消息
+  - 授权生命周期：PENDING → APPROVED（7天有效期）→ EXPIRED / REVOKED
+- **结果**：构建成功（BUILD SUCCESSFUL），12项功能完整开发，后续需后端 WebSocket 服务运行后进行联调测试
+- **用户确认**：用户明确要求功能不裁剪，全部12项完整开发
+- **变更文件清单**：
+  - `app/.../data/model/ExpertInfo.java`（新增）
+  - `app/.../data/model/ConversationInfo.java`（新增）
+  - `app/.../data/model/ChatMessage.java`（新增）
+  - `app/.../data/model/CreateConversationRequest.java`（新增）
+  - `app/.../data/model/SendMessageRequest.java`（新增）
+  - `app/.../data/model/SnapshotRequest.java`（新增）
+  - `app/.../data/model/AuthorizationInfo.java`（新增）
+  - `app/.../data/model/UnreadResponse.java`（新增）
+  - `app/.../data/websocket/StompClient.java`（新增）
+  - `app/.../data/api/GreenhouseApiService.java`（修改，+17接口）
+  - `app/.../data/repository/GreenhouseRepository.java`（修改，+17方法）
+  - `app/.../data/api/ApiClient.java`（修改，+getBaseUrl/getAuthToken）
+  - `app/.../viewmodel/ExpertViewModel.java`（新增）
+  - `app/.../adapter/ExpertAdapter.java`（新增）
+  - `app/.../adapter/ChatMessageAdapter.java`（新增）
+  - `app/.../adapter/AuthorizationAdapter.java`（新增）
+  - `app/.../ui/expert/ExpertListActivity.java`（新增）
+  - `app/.../ui/expert/ChatActivity.java`（新增）
+  - `app/.../ui/expert/AuthorizationActivity.java`（新增）
+  - `app/.../ui/expert/PendingAuthorizationFragment.java`（新增）
+  - `app/.../ui/expert/ActiveAuthorizationFragment.java`（新增）
+  - `app/.../ui/profile/ProfileFragment.java`（修改，+入口）
+  - `app/src/main/res/layout/activity_expert_list.xml`（新增）
+  - `app/src/main/res/layout/activity_chat.xml`（新增）
+  - `app/src/main/res/layout/activity_authorization.xml`（新增）
+  - `app/src/main/res/layout/item_expert.xml`（新增）
+  - `app/src/main/res/layout/item_chat_message_left.xml`（新增）
+  - `app/src/main/res/layout/item_chat_message_right.xml`（新增）
+  - `app/src/main/res/layout/item_snapshot_card.xml`（新增）
+  - `app/src/main/res/layout/item_authorization.xml`（新增）
+  - `app/src/main/res/layout/fragment_profile.xml`（修改，+2按钮）
+  - `app/src/main/res/drawable/ic_expert.xml`（新增）
+  - `app/src/main/res/drawable/ic_send.xml`（新增）
+  - `app/src/main/res/drawable/ic_snapshot.xml`（新增）
+  - `app/src/main/res/drawable/ic_image_attach.xml`（新增）
+  - `app/src/main/res/drawable/ic_video_attach.xml`（新增）
+  - `app/src/main/res/drawable/bg_bubble_left.xml`（新增）
+  - `app/src/main/res/drawable/bg_bubble_right.xml`（新增）
+  - `app/src/main/res/drawable/bg_input.xml`（新增）
+  - `app/src/main/res/drawable/bg_avatar.xml`（新增）
+  - `app/src/main/res/drawable/bg_online_dot.xml`（新增）
+  - `app/src/main/res/drawable/bg_status_tag.xml`（新增）
+  - `app/src/main/res/drawable/ic_close.xml`（新增）
+  - `app/build.gradle`（修改，+viewpager2）
+  - `app/src/main/AndroidManifest.xml`（修改，+3 Activity）
+
+### 步骤30：F11 角色适配 + Repository 补齐 | ✅ 完成
+
+- **时间**：2026-07-14
+- **操作**：
+  - **RoleAdapter 工具类**：`util/RoleAdapter.java` — 角色判断（OWNER/WORKER）+ 6 项员工权限检查（can_view_data/can_control_device/can_diagnose/can_ask_expert/can_view_alerts/can_view_history），棚主全权限，员工按位控制
+  - **TokenManager 扩展**：新增 `savePermissions()` + `getBoolean()` 方法，缓存员工权限位到 SharedPreferences
+  - **Repository 补齐**：补充 5 个缺失的 API 封装方法（getCurrentUser/getGreenhouse/getHistoryData/getUnreadAlertCount/deleteThreshold），实现 API → Repository 全覆盖
+  - **DashboardFragment 适配**：员工按权限隐藏无权限功能卡片（预警入口/长势评估/历史数据/健康评分）
+  - **ControlFragment 适配**：员工无 `can_control_device` 时隐藏设备列表和场景列表，显示"无权限"提示
+  - **ProfileFragment 适配**：棚主隐藏授权管理入口，员工按 `canAskExpert` 控制专家咨询入口
+  - **MainActivity 适配**：员工按权限隐藏底部 AI 助手 Tab 和设备控制 Tab
+- **设计决策**：
+  - 权限数据来源：员工登录后通过 `GET /worker/permissions` 获取，缓存在 SharedPreferences；棚主无需请求
+  - APP 端仅 OWNER/WORKER 两种角色，不存在 ADMIN/EXPERT
+  - 角色适配采用"白名单"模式——棚主全权限不限制，员工按位隐藏
+  - 底部 Tab 和页面卡片双重控制：Tab 隐藏粗粒度控制，卡片隐藏细粒度控制
+- **结果**：构建成功（BUILD SUCCESSFUL），APP 端所有 11 个任务（F01-F11）全部完成
+- **变更文件清单**：
+  - `app/.../util/RoleAdapter.java`（新增）— 角色适配工具类
+  - `app/.../data/local/TokenManager.java`（修改，+savePermissions/getBoolean）
+  - `app/.../data/repository/GreenhouseRepository.java`（修改，+5方法）
+  - `app/.../ui/dashboard/DashboardFragment.java`（修改，+applyRoleAdapter）
+  - `app/.../ui/control/ControlFragment.java`（修改，+角色权限判断）
+  - `app/.../ui/profile/ProfileFragment.java`（修改，+applyRoleAdapter）
+  - `app/.../ui/common/MainActivity.java`（修改，+applyRoleTabFilter）

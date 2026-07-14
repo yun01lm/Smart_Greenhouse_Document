@@ -79,6 +79,13 @@ Android 原生 Java 开发，MVVM 架构，编译通过并生成 APK。
 
 Android APP 编译通过（app-debug.apk, 7.2MB）。MVVM 架构完整：View(Activity/Fragment) → ViewModel → Repository → ApiService/StompClient。支持登录认证（JWT Token + SharedPreferences）、大棚选择、11 种传感器实时数据展示（中文名+单位+异常值红色标记）、健康评分 5 级颜色指示器。WebSocket 使用 OkHttp 实现 STOMP 1.2 协议。所有规范要求均已满足。
 
+### 后续变更（F11 集成）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `ui/dashboard/DashboardFragment.java` | 修改 | 新增 applyRoleAdapter()，员工按权限隐藏功能卡片 |
+| `ui/common/MainActivity.java` | 修改 | 新增 applyRoleTabFilter()，员工按权限隐藏底部 Tab |
+
 ---
 
 ## 阻塞记录

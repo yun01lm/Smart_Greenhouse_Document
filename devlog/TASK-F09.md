@@ -52,6 +52,19 @@ Android Fragment 组件。
 | `res/layout/fragment_profile.xml` | 新建 | 个人中心布局 |
 | `res/drawable/bg_avatar.xml` | 新建 | 头像占位背景 |
 
+### 后续变更（F10 集成）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `ui/profile/ProfileFragment.java` | 修改 | 新增"专家咨询"+"授权管理"入口跳转 |
+| `res/layout/fragment_profile.xml` | 修改 | 新增两个 MaterialButton 入口按钮 |
+
+### 后续变更（F11 集成）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `ui/profile/ProfileFragment.java` | 修改 | 新增 applyRoleAdapter()，棚主隐藏授权管理，员工按 canAskExpert 控制专家咨询入口 |
+
 ---
 
 ## 完成结果

@@ -127,4 +127,10 @@ GET    devices/actuators          — 获取设备列表 (greenhouseId)
 
 - **TASK-C01**（用户认证）：API鉴权依赖
 - **TASK-C07**（设备控制模块）：后端控制指令下发
+
+### 后续变更（F11 集成）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `ui/control/ControlFragment.java` | 修改 | 员工无 can_control_device 时隐藏设备/场景列表，显示"无权限"提示 |
 - **TASK-C12**（场景联动引擎）：后端场景逻辑
