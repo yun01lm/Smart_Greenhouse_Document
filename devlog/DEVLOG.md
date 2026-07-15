@@ -1578,3 +1578,53 @@
   - `web/src/views/export/ReportPage.vue`（新建）— 数据导出页面
   - `web/src/router/index.js`（修改）— 注册 /export 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用数据导出菜单项
+
+---
+## 2026-07-15
+
+### 步骤41：TASK-G07 系统监控界面开发 | ✅ 完成
+
+- **时间**：21:30
+- **需求**：Web 管理端系统监控界面，管理员可查看设备在线率、告警统计、服务连接状态（MQTT/数据库）、系统数据概览。
+- **设计决策（重要，记录于 TASK-G07.md）**：
+  - **自建监控端点**：选择方案 B（自建 AdminMonitorController），而非方案 A（引入 Spring Boot Actuator）。原因：
+    - 当前 4 项监控需求均为业务级别指标（设备在线率/告警统计/服务连接/数据概览），Actuator 擅长的是 JVM 技术指标（内存/CPU/GC），两者互补但不重叠
+    - 自建端点零依赖新增，不增加项目体积
+    - 数据格式完全定制化，前端直接可用，无需转换
+    - 后续如需技术指标监控（如内存使用率），再引入 Actuator 作为补充，互不影响
+  - **4 项监控内容作为实验版本**：设备在线率、告警统计、服务连接状态、系统数据概览。后续按需扩展更多指标
+  - **数据库连接检查**：通过 `DataSource.getConnection().isValid(3)` 实时检查，而非依赖连接池状态
+
+**后端开发**：
+- 新建 `MonitorOverviewResponse.java`（100行）：综合监控响应 DTO，含 4 个内嵌类（DeviceStats/AlertStats/ServiceStatus/SystemOverview）
+- 新建 `AdminMonitorService.java`（135行）：聚合 4 类监控数据
+  - `buildDeviceStats()`：通过 DeviceRepository.count() + countByStatus() 统计各状态设备数
+  - `buildAlertStats()`：JPA 全量查询 + 内存过滤最近 24h，按级别分组统计
+  - `buildServiceStatus()`：MqttClient.isConnected() + DataSource 实时连接检查
+  - `buildSystemOverview()`：4 张表的 count() 聚合
+- 新建 `AdminMonitorController.java`（40行）：1 个端点
+  - `GET /api/v1/admin/monitor/overview` — 综合监控概览
+- 修改 `DeviceRepository.java`：新增 `countByStatus()` 方法（ADMIN 全量统计用）
+- 路径 `/api/v1/admin/**` 已有 SecurityConfig `hasRole('ADMIN')` 保护，无需额外配置
+
+**前端开发**：
+- 新建 `web/src/api/monitor.js`（10行）：监控 API 封装
+- 新建 `web/src/views/monitor/MonitorPage.vue`（325行）：
+  - 页面标题栏 + 刷新按钮
+  - 服务连接状态：MQTT + 数据库两个指示灯卡片（绿/红 + 呼吸光晕）
+  - 设备在线率：4 个数字统计（总数/在线/离线/告警）+ 百分比进度条 + 图例
+  - 告警统计：24h 总数大字 + 三级细分（严重红/警告橙/提示蓝）
+  - 系统数据概览：2x2 网格（大棚/设备/用户/规则）带彩色图标
+- 修改 `web/src/router/index.js`：注册 /monitor 路由
+- 修改 `web/src/layouts/MainLayout.vue`：启用"系统监控"菜单项（移除 disabled）
+
+- **结果**：后端 `mvn compile` BUILD SUCCESS，前端 `vite build` 成功（MonitorPage 6.73 kB / gzip 2.10 kB）
+- **变更文件清单**：
+  - `backend/.../admin/dto/MonitorOverviewResponse.java`（新建）— 监控响应 DTO
+  - `backend/.../admin/service/AdminMonitorService.java`（新建）— 监控数据聚合服务
+  - `backend/.../admin/controller/AdminMonitorController.java`（新建）— 监控 API
+  - `backend/.../repository/DeviceRepository.java`（修改）— 新增 countByStatus()
+  - `web/src/api/monitor.js`（新建）— 监控 API 封装
+  - `web/src/views/monitor/MonitorPage.vue`（新建）— 系统监控页面
+  - `web/src/router/index.js`（修改）— 注册 /monitor 路由
+  - `web/src/layouts/MainLayout.vue`（修改）— 启用系统监控菜单项
