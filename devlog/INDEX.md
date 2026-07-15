@@ -63,10 +63,10 @@ author: AI助手
 | TASK-G08 | 方言语料管理开发 | G8 Web语料管理 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G08.md](./TASK-G08.md) |
 | TASK-G09 | 专家工作台开发 | G9 Web专家工作台 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G09.md](./TASK-G09.md) |
 | TASK-G10 | 棚主Web管理开发 | G10 Web棚主管理 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G10.md](./TASK-G10.md) |
-| TASK-ESP32-BASIC | ESP32基础原型开发(1组传感器+MQTT上报+RTSP) | ESP32固件 | planned | - | - | - | 否 | - |
-| TASK-ESP32-FULL | ESP32完整版开发(多组+执行器+看门狗优化) | ESP32固件 | planned | - | - | - | 否 | - |
-| TASK-DOCKER | Docker部署环境搭建 | Docker部署 | planned | - | - | - | 否 | - |
-| TASK-DOCS | 项目文档编写 | 文档编写 | planned | - | - | - | 否 | - |
+| TASK-ESP32-BASIC | ESP32基础原型开发(1组传感器+MQTT上报+RTSP) | ESP32固件 | ⏸️ 延后 | - | - | - | 否 | 硬件到货后开发 |
+| TASK-ESP32-FULL | ESP32完整版开发(多组+执行器+看门狗优化) | ESP32固件 | ⏸️ 延后 | - | - | - | 否 | 硬件到货后开发 |
+| TASK-DOCKER | Docker部署环境搭建 | Docker部署 | ✅ completed | 2026-07-12 | 2026-07-12 | AI助手 | 否 | [TASK-DOCKER.md](./TASK-DOCKER.md) |
+| TASK-DOCS | 项目文档编写 | 文档编写 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-DOCS.md](./TASK-DOCS.md) |
 
 ---
 
@@ -81,10 +81,10 @@ author: AI助手
 | ESP32固件任务 | 2 |
 | Docker部署任务 | 1 |
 | 文档编写任务 | 1 |
-| 已完成 | 45 |
+| 已完成 | 47 |
 | 进行中 | 0 |
-| 已计划 | 5 |
-| 被阻塞 | 0 |
+| 已计划 | 0 |
+| 延后 | 2 |
 
 ---
 

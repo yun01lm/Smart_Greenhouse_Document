@@ -6,7 +6,7 @@ module: root
 tags: [index, navigation, entry-point]
 status: final
 created: 2026-07-11
-last_modified: 2026-07-11
+last_modified: 2026-07-15
 author: AI助手
 related_docs: []
 ---
@@ -17,7 +17,9 @@ related_docs: []
 >
 > 项目全称：基于多模态融合的智慧大棚作物诊疗与智能管控APP
 >
-> 项目根目录：`F:\Smart_Greenhouse\`
+> 代码仓库：[yun01lm/Smart-Greenhouse](https://github.com/yun01lm/Smart-Greenhouse)
+>
+> 文档仓库：[yun01lm/Smart_Greenhouse_Document](https://github.com/yun01lm/Smart_Greenhouse_Document)
 
 ---
 
@@ -25,7 +27,7 @@ related_docs: []
 
 | 文档类型 | 目录 | 数量 | 说明 |
 |----------|------|------|------|
-| 📇 项目概述 | [README.md](./README.md) | 1 | 项目简介、技术栈、快速开始 |
+| 📇 项目总文档 | [README.md](./README.md) | 1 | 项目概述、架构、技术栈、部署手册、API概览 |
 | 📋 PRD需求文档 | [docs/prd/](./docs/prd/) | 12 | 各功能模块需求文档 |
 | 🏗️ 技术方案 | [docs/tech/](./docs/tech/) | 8 | 各模块技术设计文档 |
 | 🔌 API文档 | [docs/api/](./docs/api/) | 18 | 接口文档（按模块分组） |

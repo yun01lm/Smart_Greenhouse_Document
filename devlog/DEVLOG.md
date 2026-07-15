@@ -1758,3 +1758,35 @@
   - `web/src/views/owner/OwnerPage.vue`（新建）— 棚主管理页面
   - `web/src/router/index.js`（修改）— 注册 /owner 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用棚主管理菜单项
+
+---
+## 2026-07-15
+
+### 步骤45：项目收尾 — Docker标记 + 项目总文档 | ✅ 完成
+
+- **时间**：22:30
+- **操作**：
+  - **TASK-DOCKER 标记完成**：Docker 部署环境已在步骤2 完成（docker-compose.yml + mosquitto.conf + .env.example），本次补充 TASK-DOCKER.md 日志
+  - **ESP32 标记延后**：TASK-ESP32-BASIC 和 TASK-ESP32-FULL 标记为"⏸️ 延后"，等待硬件到货后再开发。INDEX.md 状态已更新
+  - **项目总文档**：新建 `document/README.md`，包含：
+    - 项目概述（8 项核心能力）
+    - 技术架构图（ASCII 三层架构：前端→后端→数据→AI）
+    - 技术栈表（14 项技术及版本）
+    - 项目结构树
+    - 快速开始（6 步从零启动）
+    - API 概览表（15 个模块、100+ 端点）
+    - 角色权限说明（4 种角色）
+    - 数据库设计（MySQL 25 表 + InfluxDB + Chroma）
+    - 开发进度（Phase 1-5 全部状态）
+    - Git 仓库地址
+  - 更新 `document/INDEX.md`：修正项目根目录路径、新增 GitHub 仓库链接
+  - 更新 `document/devlog/INDEX.md`：TASK-DOCKER 标记完成、ESP32 标记延后、TASK-DOCS 标记完成，统计更新为 46/47
+
+- **项目里程碑**：46/47 任务完成，2 个 ESP32 任务延后（等硬件到货）。后端 22 模块 + Android 11 模块 + Web 10 模块 + Docker + 文档，全部完成。
+- **变更文件清单**：
+  - `document/README.md`（新建）— 项目总文档
+  - `document/INDEX.md`（修改）— 更新索引
+  - `document/devlog/DEVLOG.md`（修改）— 追加步骤45
+  - `document/devlog/INDEX.md`（修改）— 更新任务状态和统计
+  - `document/devlog/TASK-DOCKER.md`（新建）— Docker 部署日志
+  - `document/devlog/TASK-DOCS.md`（新建）— 项目文档任务日志
