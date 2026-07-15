@@ -1481,3 +1481,49 @@
   - `web/src/views/knowledge/KnowledgePage.vue`（新建）
   - `web/src/router/index.js`（修改）— 注册 /knowledge 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用知识库菜单项
+
+---
+## 2026-07-15
+
+### 步骤39：TASK-G05 预警规则配置开发 | ✅ 完成
+
+- **时间**：16:00
+- **需求**：Web 管理端预警规则配置界面，管理员可管理全量预警规则和自定义阈值（跨大棚）。
+- **设计决策**：
+  - 后端新建 `AdminAlertController`（`/api/v1/admin/alerts`），复用 `AlertRuleService` 和 `AlertThresholdService`，新增 ADMIN 专用方法绕过 OWNER 所有权校验
+  - `AlertRuleService` 新增 `createRuleAdmin`/`updateRuleAdmin`/`deleteRuleAdmin`/`listAllRules` 四个 ADMIN 方法
+  - `AlertThresholdService` 新增 `listAllThresholds`/`listThresholdsByGreenhouse`/`deleteThresholdAdmin` 三个 ADMIN 方法
+  - 前端双 Tab 结构：预警规则管理 + 自定义阈值管理
+  - 规则管理：大棚筛选 + 传感器类型筛选 + 表格展示 + 新建/编辑/删除对话框 + 开关切换启用状态
+  - 阈值管理：大棚筛选 + 表格展示（用户ID/传感器/最小最大值/状态）+ 管理员可删除任意用户的阈值
+  - 规则条件编辑支持 JSON 校验 + 按规则类型显示格式提示
+
+**后端开发**：
+- 修改 `AlertRuleService.java`：新增 4 个 ADMIN 专用方法（createRuleAdmin/updateRuleAdmin/deleteRuleAdmin/listAllRules）
+- 修改 `AlertThresholdService.java`：新增 3 个 ADMIN 专用方法（listAllThresholds/listThresholdsByGreenhouse/deleteThresholdAdmin）
+- 新建 `AdminAlertController.java`（70行）：8 个 REST 端点
+  - `GET /api/v1/admin/alerts/rules` — 规则列表（可选 greenhouseId 筛选）
+  - `POST /api/v1/admin/alerts/rules` — 创建规则
+  - `PUT /api/v1/admin/alerts/rules/{id}` — 更新规则
+  - `DELETE /api/v1/admin/alerts/rules/{id}` — 删除规则
+  - `GET /api/v1/admin/alerts/thresholds` — 阈值列表（可选 greenhouseId 筛选）
+  - `DELETE /api/v1/admin/alerts/thresholds/{id}` — 删除阈值
+- 路径 `/api/v1/admin/**` 已有 SecurityConfig `hasRole('ADMIN')` 保护，无需额外配置
+
+**前端开发**：
+- 新建 `web/src/api/alert-rule.js`（48行）：6 个 API 封装（规则 CRUD 4个 + 阈值查询/删除 2个）
+- 新建 `web/src/views/alerts/AlertRulePage.vue`（395行）：双 Tab 页面
+  - Tab1 预警规则：大棚筛选 + 传感器类型筛选 + 表格（ID/大棚/传感器/规则类型/条件/级别/状态/时间/操作）+ 新建/编辑对话框（含 JSON 校验和格式提示）+ 开关切换启用 + 删除确认
+  - Tab2 自定义阈值：大棚筛选 + 表格（ID/大棚/用户/传感器/最低/最高/状态/时间）+ 管理员删除
+- 修改 `web/src/router/index.js`：注册 /alerts 路由
+- 修改 `web/src/layouts/MainLayout.vue`：启用"预警配置"菜单项（移除 disabled）
+
+- **结果**：后端 `mvn compile` BUILD SUCCESS，前端 `vite build` 成功（AlertRulePage 13.01 kB / gzip 4.06 kB）
+- **变更文件清单**：
+  - `backend/.../alert/service/AlertRuleService.java`（修改）— 新增 4 个 ADMIN 专用方法
+  - `backend/.../alert/service/AlertThresholdService.java`（修改）— 新增 3 个 ADMIN 专用方法
+  - `backend/.../admin/controller/AdminAlertController.java`（新建）— 管理员预警配置 API
+  - `web/src/api/alert-rule.js`（新建）— 预警规则 + 阈值 API 封装
+  - `web/src/views/alerts/AlertRulePage.vue`（新建）— 预警规则配置页面
+  - `web/src/router/index.js`（修改）— 注册 /alerts 路由
+  - `web/src/layouts/MainLayout.vue`（修改）— 启用预警配置菜单项
