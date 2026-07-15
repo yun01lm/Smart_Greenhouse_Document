@@ -58,7 +58,7 @@ author: AI助手
 | TASK-G03 | 用户与角色管理开发 | G3 Web用户管理 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G03.md](./TASK-G03.md) |
 | TASK-G04 | 知识库管理界面开发 | G4 Web知识库 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G04.md](./TASK-G04.md) |
 | TASK-G05 | 预警规则配置开发 | G5 Web预警配置 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G05.md](./TASK-G05.md) |
-| TASK-G06 | 数据导出报表开发 | G6 Web数据导出 | planned | - | - | - | 否 | - |
+| TASK-G06 | 数据导出报表开发 | G6 Web数据导出 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G06.md](./TASK-G06.md) |
 | TASK-G07 | 系统监控界面开发 | G7 Web系统监控 | planned | - | - | - | 否 | - |
 | TASK-G08 | 方言语料管理开发 | G8 Web语料管理 | planned | - | - | - | 否 | - |
 | TASK-G09 | 专家工作台开发 | G9 Web专家工作台 | planned | - | - | - | 否 | - |
@@ -81,9 +81,9 @@ author: AI助手
 | ESP32固件任务 | 2 |
 | Docker部署任务 | 1 |
 | 文档编写任务 | 1 |
-| 已完成 | 40 |
+| 已完成 | 41 |
 | 进行中 | 0 |
-| 已计划 | 10 |
+| 已计划 | 9 |
 | 被阻塞 | 0 |
 
 ---

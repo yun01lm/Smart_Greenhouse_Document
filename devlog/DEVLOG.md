@@ -1527,3 +1527,54 @@
   - `web/src/views/alerts/AlertRulePage.vue`（新建）— 预警规则配置页面
   - `web/src/router/index.js`（修改）— 注册 /alerts 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用预警配置菜单项
+
+---
+## 2026-07-15
+
+### 步骤40：TASK-G06 数据导出报表开发 | ✅ 完成
+
+- **时间**：17:30
+- **需求**：Web 管理端数据导出报表，管理员可按大棚和时间范围导出 4 种类型数据为 Excel（.xlsx）文件。
+- **设计决策（重要，记录于 TASK-G06.md）**：
+  - **服务端报表方案**：选择 Apache POI 在服务端生成 Excel 文件流返回，而非前端导出。原因：支持大数据量、格式统一（加粗表头 + 灰色背景 + 自动列宽）、多 Sheet 可扩展、不受浏览器内存限制
+  - **4 种数据类型作为实验版本**：传感器历史数据、预警记录、设备控制日志、健康评分记录。后续按需扩展更多类型
+  - **依赖新增**：Apache POI 5.2.5（poi-ooxml），通过父 POM 管理版本号
+
+**后端开发**：
+- 修改 `pom.xml`（父POM）：新增 `<poi.version>5.2.5</poi.version>` 属性
+- 修改 `backend/pom.xml`：新增 `poi-ooxml` 依赖
+- 新建 `AdminReportService.java`（290行）：4 种报表的 Excel 生成逻辑
+  - `exportSensorHistory()`：调用 SensorDataService 查询 InfluxDB → 填充设备名称 → 生成 Excel
+  - `exportAlerts()`：JPA 分页查询预警 → 按时间范围内存过滤 → 级别中文化 → 生成 Excel
+  - `exportControlLogs()`：通过设备 ID 关联查询控制日志 → 来源中文化 → 生成 Excel
+  - `exportHealthScores()`：JPA 按时间范围查询 → ScoreLevel 动态计算等级 → 生成 Excel
+  - 公共方法：`createHeader()`（加粗灰底表头）、`autoSizeColumns()`（自动列宽≤50字符）、`toByteArray()`
+- 新建 `AdminReportController.java`（105行）：4 个导出端点
+  - `GET /api/v1/admin/report/sensors` — 传感器历史数据（需 sensorType，默认7天）
+  - `GET /api/v1/admin/report/alerts` — 预警记录（可选 level，默认30天）
+  - `GET /api/v1/admin/report/controls` — 设备控制日志（默认30天）
+  - `GET /api/v1/admin/report/health` — 健康评分记录（默认30天）
+  - 统一返回 `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+  - 文件名：`{类型}_{yyyyMMdd}.xlsx`，UTF-8 编码
+- 路径 `/api/v1/admin/**` 已有 SecurityConfig `hasRole('ADMIN')` 保护，无需额外配置
+
+**前端开发**：
+- 新建 `web/src/api/report.js`（57行）：4 个导出 API + `downloadBlob()` 工具函数（Blob→下载）
+- 新建 `web/src/views/export/ReportPage.vue`（285行）：
+  - 通用筛选区：大棚选择器 + 日期范围选择器
+  - 4 个导出卡片（2x2 网格）：传感器历史/预警记录/控制日志/健康评分
+  - 每张卡片含：图标+标题、描述、专属筛选条件、导出按钮（loading 状态 + 禁用逻辑）
+  - 导出说明卡片：文件格式、默认时间范围、命名规则
+- 修改 `web/src/router/index.js`：注册 /export 路由
+- 修改 `web/src/layouts/MainLayout.vue`：启用"数据导出"菜单项（移除 disabled）
+
+- **结果**：后端 `mvn compile` BUILD SUCCESS，前端 `vite build` 成功（ReportPage 7.73 kB / gzip 3.06 kB）
+- **变更文件清单**：
+  - `pom.xml`（修改）— 新增 poi.version 属性
+  - `backend/pom.xml`（修改）— 新增 poi-ooxml 依赖
+  - `backend/.../admin/service/AdminReportService.java`（新建）— 报表 Excel 生成服务
+  - `backend/.../admin/controller/AdminReportController.java`（新建）— 报表导出 API
+  - `web/src/api/report.js`（新建）— 报表 API 封装 + Blob 下载工具
+  - `web/src/views/export/ReportPage.vue`（新建）— 数据导出页面
+  - `web/src/router/index.js`（修改）— 注册 /export 路由
+  - `web/src/layouts/MainLayout.vue`（修改）— 启用数据导出菜单项
