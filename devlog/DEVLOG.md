@@ -1348,3 +1348,136 @@
   - `backend/.../alert/service/AlertEngine.java`（修改）— 类型修复
   - `backend/.../chat/service/ChatService.java`（修改）— 参数补齐
   - `backend/.../qa/service/ChromaRetrievalService.java`（修改）— 异常处理
+
+---
+
+## 2026-07-14
+
+### 步骤36：架构审查 + 整改规划 | ✅ 完成
+
+- **时间**：14:30
+- **操作**：
+  - **架构审查**：以首席软件架构师角色，扫描全项目 130+ Java 文件、27 Web 文件、80+ Android 文件、80+ 文档文件
+  - 按 8 个维度评分：分层架构 14/20、数据库 10/20、AI 架构 13/20、IoT 架构 8/20、可维护性 7/20，综合 52/100
+  - 产出《架构审查报告_2026-07-14.md》
+  - **整改规划**：以高级架构工程师角色，对 22 个审查意见逐一分类
+  - 分类结果：A 类（必须修改）6 个、B 类（本迭代修改）7 个、C 类（未来优化）8 个、D 类（设计权衡不改）1 个
+  - 明确拒绝 9 个修改建议并给出充分理由（sensors/actuators 分离、Flyway、LLM 降级、Swagger、服务端分页、单元测试、Pinia、设备影子、日志规范）
+  - 制定 P0/P1/P2 三级整改计划：P0（4 项，2-3 天）→ P1（6 项，1-2 天），共计 10 项整改
+  - 产出《架构整改规划_2026-07-14.md》
+- **结果**：审查+整改规划完成，确认项目架构骨架正确，需定向整改 10 项即可支撑论文+比赛+大创验收
+- **变更文件清单**：
+  - `document/架构审查报告_2026-07-14.md`（新建）— 首席架构师审查报告
+  - `document/架构整改规划_2026-07-14.md`（新建）— 高级架构工程师整改规划
+
+---
+
+### 步骤37：架构整改执行（P0+P1） | ✅ 完成
+
+- **时间**：16:00
+- **操作**：按照《架构整改规划》执行代码修改，共 6 项（原规划 10 项，扫描后发现 DiagnosticRecord 和 HealthAssessment 已完备，取消 2 项）
+
+**P0-1：AlertController 分层修复**
+- 新建 `AlertService.java`（79行）：封装 listAlerts / markAsRead / getGreenhouseName 三个方法
+- 修改 `AlertController.java`：移除 `AlertRepository` 和 `GreenhouseRepository` 的直接注入，改为注入 `AlertService`。API 路径和响应格式不变
+- 修改原因：Controller 直接操作 Repository 违反分层约定，其余所有 Controller 均遵循 Controller→Service→Repository
+
+**P0-2：MQTT Topic 统一管理**
+- 新建 `MqttTopicConstants.java`（74行）：Topic 模板常量（DEVICE_DATA_WILDCARD）+ 工厂方法（deviceDataTopic / deviceControlTopic）+ 默认 QoS
+- 修改 `MqttConfig.java`：移除本地 SUBSCRIBE_TOPIC 常量（已迁移至 MqttTopicConstants）
+- 修改 `MqttSubscriber.java`：使用 MqttTopicConstants.DEVICE_DATA_WILDCARD 和 DEFAULT_QOS
+- 修改 `ControlService.java`：sendMqttCommand() 使用 MqttTopicConstants.deviceControlTopic()
+- 修改 `Device.java`：@PrePersist 使用 MqttTopicConstants.deviceDataTopic()
+- 修改原因：MQTT Topic 在 4 处分散定义（MqttConfig / MqttSubscriber / ControlService / Device），字符串拼接重复
+
+**P0-3：RAG Prompt 配置化**
+- 修改 `RagQaService.java`：移除 SYSTEM_PROMPT/TOP_K 硬编码常量，Prompt/temperature/max_tokens/topK 全部从 application.yml 的 `greenhouse.ai.rag.*` 配置段读取，保留原值作为默认值
+- 修改 `application-dev.yml`：新增 `greenhouse.ai.rag` 配置段（system-prompt / temperature: 0.7 / max-tokens: 2000 / top-k: 5）
+- 修改原因：Prompt 和模型参数硬编码，论文无法做 Prompt 工程对比实验
+
+**P0-4：多模态权重配置化**
+- 新建 `FusionConfig.java`（83行）：@ConfigurationProperties(prefix="greenhouse.fusion")，包含 EnvWeights / VisualWeights / OverallWeights / defaultThresholds / severityFactors
+- 修改 `EnvironmentHealthCalculator.java`：权重（compliance/stability/consistency）和默认阈值从 FusionConfig 读取
+- 修改 `VisualHealthCalculator.java`：权重（disease/growth）和病害严重性因子从 FusionConfig 读取
+- 修改 `HealthAssessmentService.java`：融合比例（envWeight/visualWeight）从 FusionConfig 读取
+- 修改 `application-dev.yml`：新增 `greenhouse.fusion` 配置段（env/visual/overall 三组权重）
+- 修改原因：所有融合权重/阈值/因子硬编码，论文无法做权重对比实验
+
+**P1-1：KnowledgeDocument JPA 实体**
+- 新建 `KnowledgeDocument.java`（104行）：对应 knowledge_documents 表（id/title/category/file_path/file_type/file_size/chunk_count/vector_indexed/indexed_at）
+- 新建 `KnowledgeDocumentRepository.java`（26行）：findByCategory / findByVectorIndexedTrue / findByVectorIndexedFalse / countByCategory / findByTitleContaining
+- 修改原因：设计文档定义了此表但无 JPA 实体，阻塞 TASK-G04 知识库管理。实现"MySQL 管元数据，Chroma 管向量"架构
+
+**P1-4：设备模拟器**
+- 新建 `simulator/device_simulator.py`（206行）：Python MQTT 设备模拟器，支持 --mode normal/abnormal/disease_risk 三种模式
+- 新建 `simulator/devices.json`（106行）：模拟 1 个大棚 6 个传感器（温度/湿度/光照/CO2/土壤湿度/土壤温度），每种模式独立参数范围
+- 修改原因：ESP32 硬件不可用，系统需要数据源闭环验证。严格遵循真实协议（Topic 格式、JSON 结构、QoS）
+
+- **结果**：`mvn compile -pl common,backend` **BUILD SUCCESS**，零错误零警告。17 个文件（8 新建 + 9 修改），架构整改全部完成
+- **步骤37.1 YAML 配置修复（2026-07-15）**：发现 `rag:` 嵌套在顶层 `ai:` 下导致 `greenhouse.ai.rag.*` 路径不匹配，将 `rag:` 移至 `greenhouse.ai:` 下与 `fusion:` 并列，修复 Spring `@Value` 注入路径
+- **变更文件清单**：
+  - `backend/.../alert/service/AlertService.java`（新建）— 告警记录管理 Service
+  - `backend/.../alert/controller/AlertController.java`（修改）— 移除 Repository 直接注入
+  - `backend/.../module/mqtt/MqttTopicConstants.java`（新建）— MQTT Topic 常量与工厂方法
+  - `backend/.../config/MqttConfig.java`（修改）— 移除本地 Topic 常量
+  - `backend/.../module/mqtt/MqttSubscriber.java`（修改）— 使用统一 Topic 常量
+  - `backend/.../module/control/service/ControlService.java`（修改）— 使用统一 Topic 工厂方法
+  - `backend/.../entity/Device.java`（修改）— @PrePersist 使用统一 Topic 工厂方法
+  - `backend/.../module/qa/service/RagQaService.java`（修改）— Prompt/参数从配置读取
+  - `backend/.../config/FusionConfig.java`（新建）— 多模态融合配置类
+  - `backend/.../health/service/EnvironmentHealthCalculator.java`（修改）— 权重从 FusionConfig 读取
+  - `backend/.../health/service/VisualHealthCalculator.java`（修改）— 权重从 FusionConfig 读取
+  - `backend/.../health/service/HealthAssessmentService.java`（修改）— 融合比例从 FusionConfig 读取
+  - `backend/.../entity/KnowledgeDocument.java`（新建）— 知识库文档 JPA 实体
+  - `backend/.../repository/KnowledgeDocumentRepository.java`（新建）— 知识库文档 Repository
+  - `backend/src/main/resources/application-dev.yml`（修改）— 新增 greenhouse.ai.rag + greenhouse.fusion 配置段
+  - `simulator/device_simulator.py`（新建）— MQTT 设备模拟器
+  - `simulator/devices.json`（新建）— 模拟器设备配置
+
+---
+
+### 步骤38：TASK-G04 知识库管理界面开发 | ✅ 完成
+
+- **时间**：15:00
+- **操作**：Web 端知识库管理界面全栈开发（后端 API + 文档处理管道 + 前端页面）
+
+**后端开发**：
+- 新建 `KnowledgeDocumentResponse.java`（59行）：文档响应 DTO，含文件大小格式化
+- 新建 `KnowledgeTestRequest.java` / `KnowledgeTestResponse.java`：问答测试 DTO
+- 新建 `KnowledgeService.java`（375行）：核心业务逻辑
+  - 文档 CRUD（列表/上传/删除）+ 分类列表
+  - **文档处理管道**：上传→保存→文本提取→切片(800字/块，200字重叠)→批量 Embedding(SiliconFlow bge-m3)→Chroma 写入→MySQL 状态更新
+  - **删除同步清理**：Chroma 向量(按 doc_id 过滤) + 本地文件 + MySQL 记录
+  - 问答测试：调用 RagQaService.generateAnswerOnly()，返回 AI 回答 + 检索片段
+- 新建 `KnowledgeController.java`（93行）：6 个 REST 端点
+- 修改 `KnowledgeDocumentRepository.java`：新增分页查询方法
+- 修改 `SecurityConfig.java`：新增 `/api/v1/knowledge/**` → `hasRole('ADMIN')`
+- 修改 `RagQaService.java`：AnswerResult record 和 generateAnswerOnly() 改为 public（跨包调用）
+
+**前端开发**：
+- 新建 `web/src/api/knowledge.js`（33行）：6 个 API 封装
+- 新建 `web/src/views/knowledge/KnowledgePage.vue`（373行）：双 Tab 页面
+  - Tab1 文档管理：分类筛选、关键词搜索、分页表格、上传对话框（拖拽）、向量化状态标签、重试按钮、删除确认
+  - Tab2 问答测试：问题输入 → RAG 测试 → AI 回答卡片 + 检索片段列表
+- 修改 `web/src/router/index.js`：注册 /knowledge 路由
+- 修改 `web/src/layouts/MainLayout.vue`：启用"知识库"菜单项（移除 disabled）
+
+**重要说明**：
+- 方言语料管理（PRD US-006）延后到 TASK-G08
+- PDF/DOCX 暂不支持，上传时返回友好提示
+- 向量化在当前请求中同步执行，大文件后续可改为异步队列
+
+- **结果**：后端 `mvn compile` BUILD SUCCESS（167 个 Java 文件），前端 `vite build` 成功（KnowledgePage 9.45 kB / gzip 3.83 kB）
+- **变更文件清单**：
+  - `backend/.../knowledge/dto/KnowledgeDocumentResponse.java`（新建）
+  - `backend/.../knowledge/dto/KnowledgeTestRequest.java`（新建）
+  - `backend/.../knowledge/dto/KnowledgeTestResponse.java`（新建）
+  - `backend/.../knowledge/service/KnowledgeService.java`（新建）
+  - `backend/.../knowledge/controller/KnowledgeController.java`（新建）
+  - `backend/.../repository/KnowledgeDocumentRepository.java`（修改）— 新增分页查询方法
+  - `backend/.../config/SecurityConfig.java`（修改）— 新增 knowledge API 权限
+  - `backend/.../qa/service/RagQaService.java`（修改）— AnswerResult/generateAnswerOnly 改为 public
+  - `web/src/api/knowledge.js`（新建）
+  - `web/src/views/knowledge/KnowledgePage.vue`（新建）
+  - `web/src/router/index.js`（修改）— 注册 /knowledge 路由
+  - `web/src/layouts/MainLayout.vue`（修改）— 启用知识库菜单项
