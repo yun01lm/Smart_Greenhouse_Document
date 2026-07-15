@@ -1628,3 +1628,52 @@
   - `web/src/views/monitor/MonitorPage.vue`（新建）— 系统监控页面
   - `web/src/router/index.js`（修改）— 注册 /monitor 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用系统监控菜单项
+
+---
+## 2026-07-15
+
+### 步骤42：TASK-G08 方言语料管理开发 | ✅ 完成
+
+- **时间**：21:45
+- **需求**：Web 管理端方言语料管理。管理员可上传方言音频（含标注文本）、按方言类型筛选/关键词搜索/分页浏览、删除语料（含音频文件清理）。本模块是 G04 知识库开发时延后的 US-006 方言语料管理（记录于 TASK-G04.md 备注中）。
+- **设计决策**：
+  - 定位为**语料文件存储管理入口**，而非完整标注平台（专业标注需 Praat/ELAN 等 NLP 工具）
+  - 音频存储：按日期分目录（`uploads/corpus/yyyy/MM/dd/uuid.ext`），与 FileService 设计一致
+  - 支持 6 种方言类型：河北话/山东话/东北话/河南话/四川话/广东话
+  - 来源区分：MANUAL（手动上传）/ QA_COLLECT（语音问答采集），为后续从问答记录自动采集语料预留
+  - 删除同步清理音频文件（`Files.deleteIfExists`）
+
+**后端开发**：
+- 新建 `DialectCorpus.java`（90行）：JPA 实体，对应 dialect_corpus 表（id/dialect/audioPath/audioFilename/audioSize/annotationText/dialectText/source/remark）
+- 新建 `DialectCorpusRepository.java`（30行）：按方言类型分页、标注文本模糊搜索、方言类型去重查询
+- 新建 `DialectCorpusResponse.java`（35行）：语料响应 DTO（fromEntity 转换）
+- 新建 `AdminCorpusService.java`（140行）：上传（校验音频格式/大小→保存文件→创建记录）、列表（分页+方言筛选+关键词搜索）、方言类型列表、删除（清理文件+删除记录）
+- 新建 `AdminCorpusController.java`（75行）：4 个端点
+  - `GET /api/v1/admin/corpus` — 语料列表（?dialect=&keyword=&page=&size=）
+  - `GET /api/v1/admin/corpus/dialects` — 方言类型列表
+  - `POST /api/v1/admin/corpus` — 上传语料（multipart）
+  - `DELETE /api/v1/admin/corpus/{id}` — 删除语料
+- 路径 `/api/v1/admin/**` 已有 SecurityConfig `hasRole('ADMIN')` 保护，无需额外配置
+
+**前端开发**：
+- 新建 `web/src/api/corpus.js`（25行）：4 个 API 封装
+- 新建 `web/src/views/corpus/CorpusPage.vue`（330行）：
+  - 操作栏：方言类型筛选 + 标注文本关键词搜索 + 上传按钮
+  - 语料表格：ID/方言类型标签/音频文件名+大小/标注文本/方言原文/来源/备注/时间/删除
+  - 上传对话框：方言类型选择、拖拽上传音频（30MB 限制）、标注文本、方言原文（可选）、来源单选、备注
+  - 分页：支持 10/20/50 条/页
+- 修改 `web/src/router/index.js`：注册 /corpus 路由
+- 修改 `web/src/layouts/MainLayout.vue`：启用"语料管理"菜单项（移除 disabled）
+
+- **跨模块影响**：TASK-G04（知识库管理）当初备注"方言语料管理延后到 TASK-G08"，本次已在 G04 日志中追加完成说明
+- **结果**：后端 `mvn compile` BUILD SUCCESS（170+ Java 文件），前端 `vite build` 成功（CorpusPage 8.52 kB / gzip 3.37 kB）
+- **变更文件清单**：
+  - `backend/.../entity/DialectCorpus.java`（新建）— 方言语料 JPA 实体
+  - `backend/.../repository/DialectCorpusRepository.java`（新建）— 语料数据访问层
+  - `backend/.../admin/dto/DialectCorpusResponse.java`（新建）— 语料响应 DTO
+  - `backend/.../admin/service/AdminCorpusService.java`（新建）— 语料管理服务
+  - `backend/.../admin/controller/AdminCorpusController.java`（新建）— 语料管理 API
+  - `web/src/api/corpus.js`（新建）— 语料 API 封装
+  - `web/src/views/corpus/CorpusPage.vue`（新建）— 方言语料管理页面
+  - `web/src/router/index.js`（修改）— 注册 /corpus 路由
+  - `web/src/layouts/MainLayout.vue`（修改）— 启用语料管理菜单项
