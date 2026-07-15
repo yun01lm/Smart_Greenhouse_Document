@@ -1677,3 +1677,51 @@
   - `web/src/views/corpus/CorpusPage.vue`（新建）— 方言语料管理页面
   - `web/src/router/index.js`（修改）— 注册 /corpus 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用语料管理菜单项
+
+---
+## 2026-07-15
+
+### 步骤43：TASK-G09 专家工作台开发 | ✅ 完成
+
+- **时间**：22:00
+- **需求**：Web 管理端专家工作台，管理员可查看全量专家列表（含在线状态/咨询数）、管理专家在线状态、查看所有授权记录（分页+状态筛选）、查看工作台统计数据。
+- **设计决策**：
+  - 复用已有 `ExpertService` 和 Repository，新建 ADMIN 专用 `AdminExpertService` + `AdminExpertController`
+  - 授权记录支持全量查询（不限制用户），按状态筛选（PENDING/APPROVED/REJECTED/REVOKED/EXPIRED）
+  - 专家列表展示在线开关、咨询数、最近活跃时间，管理员可直接切换专家在线状态
+
+**后端开发**：
+- 新建 `AdminExpertService.java`（130行）：
+  - `listExperts()`：查询所有 EXPERT 用户 + 在线状态 + 咨询数聚合
+  - `toggleOnline()`：校验专家角色 → 切换在线状态
+  - `listAuthorizations()`：全量分页授权记录，含专家名/用户名/大棚名/剩余天数
+  - `getStats()`：专家总数/在线数/授权数/会话数 四维统计
+- 新建 `AdminExpertController.java`（70行）：4 个端点
+  - `GET /api/v1/admin/experts` — 专家列表
+  - `PUT /api/v1/admin/experts/{id}/online` — 切换在线状态
+  - `GET /api/v1/admin/experts/authorizations` — 全量授权记录（?status=&page=&size=）
+  - `GET /api/v1/admin/experts/stats` — 工作台统计
+- 修改 `DataAuthorizationRepository.java`：新增 `findByStatus()` 分页查询
+- 修改 `ExpertAvailabilityRepository.java`：新增 `countByIsOnline()` 计数
+- 修改 `ChatConversationRepository.java`：新增 `countByExpertId()` 咨询数统计
+
+**前端开发**：
+- 新建 `web/src/api/expert.js`（20行）：4 个 API 封装
+- 新建 `web/src/views/expert/ExpertPage.vue`（260行）：
+  - 统计卡片行：专家总数/在线专家/授权记录/咨询会话 四色卡片
+  - Tab1 专家列表：表格（姓名/手机/在线开关/最大并发/咨询数/最近活跃/账号状态）
+  - Tab2 授权管理：状态筛选 + 分页表格（专家/用户/大棚/状态/理由/剩余天数/时间）
+- 修改 `web/src/router/index.js`：注册 /expert 路由
+- 修改 `web/src/layouts/MainLayout.vue`：启用"专家工作台"菜单项（移除 disabled）
+
+- **结果**：后端 `mvn compile` BUILD SUCCESS，前端 `vite build` 成功（ExpertPage 6.29 kB / gzip 2.39 kB）
+- **变更文件清单**：
+  - `backend/.../admin/service/AdminExpertService.java`（新建）— 专家工作台服务
+  - `backend/.../admin/controller/AdminExpertController.java`（新建）— 专家工作台 API
+  - `backend/.../repository/DataAuthorizationRepository.java`（修改）— 新增 findByStatus 分页
+  - `backend/.../repository/ExpertAvailabilityRepository.java`（修改）— 新增 countByIsOnline
+  - `backend/.../repository/ChatConversationRepository.java`（修改）— 新增 countByExpertId
+  - `web/src/api/expert.js`（新建）— 专家工作台 API 封装
+  - `web/src/views/expert/ExpertPage.vue`（新建）— 专家工作台页面
+  - `web/src/router/index.js`（修改）— 注册 /expert 路由
+  - `web/src/layouts/MainLayout.vue`（修改）— 启用专家工作台菜单项
