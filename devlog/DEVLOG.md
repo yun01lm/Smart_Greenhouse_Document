@@ -1810,3 +1810,52 @@
   - `backend/.../repository/GrowthAssessmentRepository.java`（新建）— 长势评估数据访问层
   - `document/devlog/TASK-C08.md`（修改）— 追加 GrowthAssessment 实体完成说明
   - `document/devlog/TASK-C15.md`（修改）— 追加 GrowthAssessment 实体完成说明
+
+---
+## 2026-07-15
+
+### 步骤47：Mock Provider 全量覆盖 | ✅ 完成
+
+- **时间**：23:35
+- **需求**：所有外部第三方服务必须提供 Mock Provider。RC 验收时默认使用 Mock 模式进行系统验证，不依赖真实 API 调用。
+- **覆盖清单**：
+
+| 外部服务 | Mock Provider | 配置切换 |
+|------|------|------|
+| 百度 AI 植物识别 | MockDiseaseRecognitionProvider | ai.image.provider=mock |
+| 讯飞语音识别 | MockSpeechRecognitionProvider | ai.voice.provider=mock |
+| DeepSeek LLM | MockLlmProvider | ai.llm.provider=mock |
+| SiliconFlow Embedding | MockEmbeddingProvider | ai.embedding.provider=mock |
+| 和风天气 | MockWeatherService | weather.provider=mock |
+| ResNet 本地模型 | (保留，config=resnet 时激活) | — |
+| Whisper 本地模型 | (保留，config=whisper 时激活) | — |
+| Chroma 向量检索 | 已有降级逻辑（返回空列表） | — |
+
+**后端开发**：
+- 新建 `ai/LlmProvider.java`（25行）：LLM 策略接口（generate + getEngineName）
+- 新建 `ai/EmbeddingProvider.java`（35行）：Embedding 策略接口（embed/embedBatch + getDimension/getEngineName）
+- 新建 `ai/mock/MockDiseaseRecognitionProvider.java`（30行）：模拟返回番茄晚疫病诊断结果
+- 新建 `ai/mock/MockSpeechRecognitionProvider.java`（40行）：模拟返回河北方言语音识别结果
+- 新建 `ai/mock/MockLlmProvider.java`（45行）：根据问题关键词返回不同农业知识回答
+- 新建 `ai/mock/MockEmbeddingProvider.java`（55行）：基于文本 hashCode 生成确定性 1024 维向量（L2 归一化）
+- 新建 `ai/mock/MockWeatherService.java`（65行）：模拟晴转多云天气 + 2 天预报
+- 新建 `ai/deepseek/DeepSeekLlmProvider.java`（90行）：DeepSeek 真实调用（保留原逻辑，ai.llm.provider=deepseek 时激活）
+- 新建 `ai/siliconflow/SiliconFlowEmbeddingProvider.java`（100行）：SiliconFlow 真实调用（保留原逻辑，ai.embedding.provider=siliconflow 时激活）
+- 修改 `RagQaService.java`：注入 LlmProvider，generateAnswer() 优先使用 Provider 而非直接 HTTP 调用
+- 修改 `EmbeddingService.java`：注入 EmbeddingProvider，embed()/embedBatch() 优先使用 Provider
+- 修改 `application-dev.yml`：新增 ai.llm.provider / ai.embedding.provider / weather.provider 配置项，默认全部设为 mock
+
+- **结果**：`mvn compile` BUILD SUCCESS，`vite build` 成功。RC 验收时直接 `docker-compose up -d` + `mvn spring-boot:run` 即可运行全系统 Mock 模式。
+- **变更文件清单**：
+  - `backend/.../ai/LlmProvider.java`（新建）— LLM 策略接口
+  - `backend/.../ai/EmbeddingProvider.java`（新建）— Embedding 策略接口
+  - `backend/.../ai/mock/MockDiseaseRecognitionProvider.java`（新建）— Mock 病虫害识别
+  - `backend/.../ai/mock/MockSpeechRecognitionProvider.java`（新建）— Mock 语音识别
+  - `backend/.../ai/mock/MockLlmProvider.java`（新建）— Mock LLM
+  - `backend/.../ai/mock/MockEmbeddingProvider.java`（新建）— Mock Embedding
+  - `backend/.../ai/mock/MockWeatherService.java`（新建）— Mock 天气
+  - `backend/.../ai/deepseek/DeepSeekLlmProvider.java`（新建）— DeepSeek 真实实现
+  - `backend/.../ai/siliconflow/SiliconFlowEmbeddingProvider.java`（新建）— SiliconFlow 真实实现
+  - `backend/.../qa/service/RagQaService.java`（修改）— 注入 LlmProvider
+  - `backend/.../qa/service/EmbeddingService.java`（修改）— 注入 EmbeddingProvider
+  - `backend/.../resources/application-dev.yml`（修改）— 默认 Mock 模式
