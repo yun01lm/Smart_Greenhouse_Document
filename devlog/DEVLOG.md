@@ -1790,3 +1790,23 @@
   - `document/devlog/INDEX.md`（修改）— 更新任务状态和统计
   - `document/devlog/TASK-DOCKER.md`（新建）— Docker 部署日志
   - `document/devlog/TASK-DOCS.md`（新建）— 项目文档任务日志
+
+---
+## 2026-07-15
+
+### 步骤46：审计修复 — GrowthAssessment JPA 实体补全 | ✅ 完成
+
+- **时间**：23:10
+- **背景**：项目一致性审计（步骤45后）发现 `growth_assessments` 表在数据库设计中存在但无 JPA 实体（架构整改 P1-3 标记但未执行）。APP 端 F07 作物长势评估模块使用 API 数据，但后端缺少持久层支持。
+- **操作**：
+  - 新建 `GrowthAssessment.java`（80行）：JPA 实体，对应 growth_assessments 表（id/greenhouseId/cropCycleId/imagePath/growthStage/plantHeight/leafArea/leafColor/healthScore/createdAt），含索引定义
+  - 新建 `GrowthAssessmentRepository.java`（25行）：3 个查询方法（最新评估/按大棚分页/按生长周期分页）
+- **跨模块影响**：
+  - TASK-C08（图片诊断）和 TASK-C15（多模态融合）的 table-module-mapping 中引用了 growth_assessments 表，现已补齐实体
+  - 架构整改 P1-3 问题现已关闭
+- **结果**：`mvn compile` BUILD SUCCESS，JPA 实体总数从 21 增至 22
+- **变更文件清单**：
+  - `backend/.../entity/GrowthAssessment.java`（新建）— 长势评估 JPA 实体
+  - `backend/.../repository/GrowthAssessmentRepository.java`（新建）— 长势评估数据访问层
+  - `document/devlog/TASK-C08.md`（修改）— 追加 GrowthAssessment 实体完成说明
+  - `document/devlog/TASK-C15.md`（修改）— 追加 GrowthAssessment 实体完成说明

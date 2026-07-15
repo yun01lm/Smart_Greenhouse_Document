@@ -78,3 +78,4 @@ AI病虫害诊断链路完整，策略模式支持百度API→ResNet无缝切换
 
 - 完成日期：2026-07-13
 - 关联DEVLOG：步骤13
+- **2026-07-15 更新**：`growth_assessments` 表对应的 JPA 实体 `GrowthAssessment.java` 已于步骤46 补全（审计发现缺失，架构整改 P1-3 关闭）
