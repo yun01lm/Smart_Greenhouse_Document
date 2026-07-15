@@ -1725,3 +1725,36 @@
   - `web/src/views/expert/ExpertPage.vue`（新建）— 专家工作台页面
   - `web/src/router/index.js`（修改）— 注册 /expert 路由
   - `web/src/layouts/MainLayout.vue`（修改）— 启用专家工作台菜单项
+
+---
+## 2026-07-15
+
+### 步骤44：TASK-G10 棚主 Web 管理开发 | ✅ 完成
+
+- **时间**：22:00
+- **需求**：Web 管理端棚主管理，管理员可查看所有棚主账号（聚合大棚数和员工数）、点击查看棚主名下大棚详情。
+- **备注**：这是 Web 管理端（G01-G10）最后一个任务。Web 端全部 10 个模块现已全部完成。
+
+**后端开发**：
+- 新建 `AdminOwnerController.java`（95行）：2 个端点
+  - `GET /api/v1/admin/owners` — 棚主列表（含大棚数 greenCount + 员工数 employeeCount）
+  - `GET /api/v1/admin/owners/{id}/greenhouses` — 查看棚主名下大棚详情（名称/位置/作物/地区/状态）
+- 复用已有 `UserRepository.findByRole(OWNER)` + `GreenhouseRepository.countByOwnerId()` + `findByOwnerId()`
+- 零新增依赖，路径复用 SecurityConfig `hasRole('ADMIN')`
+
+**前端开发**：
+- 新建 `web/src/api/owner.js`（12行）：2 个 API 封装
+- 新建 `web/src/views/owner/OwnerPage.vue`（170行）：
+  - 棚主表格：用户名/真实姓名/手机号/大棚数（绿色标签）/员工数（橙色标签）/账号状态/注册时间
+  - 点击"查看大棚"弹窗：展示该棚主名下全部大棚详情（名称/位置/作物/地区/状态）
+  - 无大棚时显示空状态提示
+- 修改 `web/src/router/index.js`：注册 /owner 路由
+- 修改 `web/src/layouts/MainLayout.vue`：启用"棚主管理"菜单项（移除 disabled）
+
+- **结果**：后端 `mvn compile` BUILD SUCCESS，前端 `vite build` 成功（OwnerPage 3.82 kB / gzip 1.59 kB）
+- **变更文件清单**：
+  - `backend/.../admin/controller/AdminOwnerController.java`（新建）— 棚主管理 API
+  - `web/src/api/owner.js`（新建）— 棚主 API 封装
+  - `web/src/views/owner/OwnerPage.vue`（新建）— 棚主管理页面
+  - `web/src/router/index.js`（修改）— 注册 /owner 路由
+  - `web/src/layouts/MainLayout.vue`（修改）— 启用棚主管理菜单项

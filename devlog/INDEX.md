@@ -62,7 +62,7 @@ author: AI助手
 | TASK-G07 | 系统监控界面开发 | G7 Web系统监控 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G07.md](./TASK-G07.md) |
 | TASK-G08 | 方言语料管理开发 | G8 Web语料管理 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G08.md](./TASK-G08.md) |
 | TASK-G09 | 专家工作台开发 | G9 Web专家工作台 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G09.md](./TASK-G09.md) |
-| TASK-G10 | 棚主Web管理开发 | G10 Web棚主管理 | planned | - | - | - | 否 | - |
+| TASK-G10 | 棚主Web管理开发 | G10 Web棚主管理 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G10.md](./TASK-G10.md) |
 | TASK-ESP32-BASIC | ESP32基础原型开发(1组传感器+MQTT上报+RTSP) | ESP32固件 | planned | - | - | - | 否 | - |
 | TASK-ESP32-FULL | ESP32完整版开发(多组+执行器+看门狗优化) | ESP32固件 | planned | - | - | - | 否 | - |
 | TASK-DOCKER | Docker部署环境搭建 | Docker部署 | planned | - | - | - | 否 | - |
@@ -81,9 +81,9 @@ author: AI助手
 | ESP32固件任务 | 2 |
 | Docker部署任务 | 1 |
 | 文档编写任务 | 1 |
-| 已完成 | 44 |
+| 已完成 | 45 |
 | 进行中 | 0 |
-| 已计划 | 6 |
+| 已计划 | 5 |
 | 被阻塞 | 0 |
 
 ---
