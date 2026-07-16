@@ -1976,3 +1976,79 @@
   - `backend/.../resources/application-dev.yml`（修改）— 字符编码修复
   - `common/pom.xml`（修改）— 跳过 repackage
   - `tools/init_seed_data.sql`（修改）— 新增 CONTROLLER 种子数据
+
+---
+
+## 2026-07-16（续）
+
+### 步骤50：第二轮P1问题修复 — 系统集成验收v2.0 | ✅ 完成
+
+- **时间**：17:40
+- **背景**：第二轮系统集成验收发现5个新P1问题，需在RC冻结前全部修复
+
+**P1-1：ChromaDB 知识库向量化未执行**
+- 根因：ChromaDB 中 `greenhouse_knowledge` collection 从未创建，知识文档仅存储元数据未向量化
+- 修复：
+  - 新建 `ChromaInitializer.java` — 应用启动时自动创建 ChromaDB database + collection，缓存 UUID
+  - 新建 `KnowledgeSeeder.java` — 自动检查知识库是否为空，为空时创建示例文档并触发向量化
+  - 创建两份示例知识文档（`番茄种植技术指南.md`、`常见病虫害防治手册.md`），内容覆盖品种选择/育苗/定植/环境调控/水肥/病虫害防治等
+  - 每份文档切片为4个 chunk（CHUNK_SIZE=800），通过 Mock Embedding 向量化后写入 ChromaDB
+- 复验：ChromaDB collection 确认存在（dimension=1024），MySQL 显示 chunk_count=4, vector_indexed=true
+- 文件：`backend/.../qa/service/ChromaInitializer.java`（新建）、`backend/.../knowledge/service/KnowledgeSeeder.java`（新建）、`uploads/knowledge/*.md`（新建）
+
+**P1-2：ChromaDB v2 API UUID 问题**
+- 根因：Chroma 1.4.4 v2 API 需要 collection UUID（非名称），原代码直接拼接 collection name 导致 HTTP 400
+- 修复：
+  - `ChromaInitializer` 启动时通过 GET /collections 查找或 POST 创建 collection，缓存 UUID
+  - `ChromaRetrievalService` 注入 `ChromaInitializer`，使用 `getCollectionPath()` 获取 `/api/v2/.../collections/{uuid}` 路径
+  - `KnowledgeService.writeToChroma()` 和 `deleteFromChroma()` 同样改用 UUID 路径
+  - `ChromaInitializer.ensureDatabase()` 自动处理 ChromaDB 不自动创建 default database 的兼容性问题
+- 复验：ChromaDB collection 创建成功（UUID: a512b232-...），写入和查询均正常
+- 文件：`backend/.../qa/service/ChromaInitializer.java`、`ChromaRetrievalService.java`、`KnowledgeService.java`
+
+**P1-3：CONTROLLER 设备无心跳维持在线**
+- 根因：Device Simulator 仅模拟 SENSOR 类型设备数据上报，CONTROLLER 类型（PUMP-001/FAN-001）无任何 MQTT 消息
+- 修复：
+  - `devices.json` — 新增 PUMP-001 和 FAN-001 两个 CONTROLLER 设备定义（type=CONTROLLER, interval=30s）
+  - `device_simulator.py` — `_publish_sensor_data()` 增加设备类型判断：CONTROLLER 发送心跳包（含 deviceType/status 字段），SENSOR 发送传感器数据
+  - `MqttSubscriber.java` — `SensorDataListener.messageArrived()` 增加消息类型判断：deviceType=CONTROLLER 时仅更新设备在线状态，不执行传感器数据处理流程
+  - `SensorDataService.java` — 新增 `updateDeviceOnline()` 方法（仅更新状态和心跳时间，不更新传感器值）
+- 复验：Simulator 启动后 PUMP-001 和 FAN-001 自动变为 ONLINE，设备控制 API 可直接使用无需手动干预
+- 文件：`simulator/devices.json`、`simulator/device_simulator.py`、`backend/.../mqtt/MqttSubscriber.java`、`backend/.../sensor/service/SensorDataService.java`
+
+**P1-4：系统审计日志缺失**
+- 根因：系统仅有 stdout 日志输出，关键用户操作无持久化审计追踪
+- 修复：
+  - 新建 `AuditLog.java` 实体 — 记录 userId/username/action/target/detail/ip/httpMethod/requestUri/result/elapsedMs
+  - 新建 `AuditLogRepository.java` — 支持按用户/操作类型/时间范围/结果查询
+  - 新建 `AuditAspect.java` AOP 切面 — 拦截所有 @RestController 的 POST/PUT/DELETE 方法，自动记录审计日志
+  - 操作类型自动推断：recognize→DIAGNOSIS, ask→QA, control→CONTROL, upload→UPLOAD, delete→DELETE, create→CREATE
+  - 排除登录请求和 GET 查询操作
+  - 审计日志记录失败不影响主业务流程
+- 复验：audit_logs 表已创建，6条记录（DIAGNOSIS/QA/CONTROL/UPLOAD），自动记录用户名/IP/耗时/结果
+- 文件：`backend/.../entity/AuditLog.java`（新建）、`backend/.../repository/AuditLogRepository.java`（新建）、`backend/.../security/aop/AuditAspect.java`（新建）
+
+**P1-5：Android 安全配置风险**
+- 根因：AndroidManifest.xml 中 `usesCleartextTraffic=true` 全局开放明文流量，`allowBackup=true`，debug 构建无显式安全配置
+- 修复：
+  - `AndroidManifest.xml` — `allowBackup` 改为 false，`usesCleartextTraffic` 改为 false，添加 `networkSecurityConfig` 引用
+  - 新建 `network_security_config.xml` — 默认禁止明文流量，仅对 localhost/10.0.2.2 开发地址开放例外
+  - `build.gradle` — release 构建显式设置 `debuggable=false`，debug 构建显式设置 `debuggable=true`
+- 标注：**未编译验证**（沙箱环境无 Android SDK）
+- 文件：`app/src/main/AndroidManifest.xml`、`app/src/main/res/xml/network_security_config.xml`（新建）、`app/build.gradle`
+
+**复验汇总（6大闭环）**：
+
+| 闭环 | v2.0 修复前 | v3.0 修复后 |
+|------|------------|------------|
+| 一 · 数据展示 | ✅ 通过 | ✅ 通过（不变） |
+| 二 · AI 诊断 | ✅ 通过 | ✅ 通过（不变） |
+| 三 · RAG 问答 | ⚠️ 部分通过 | ✅ **通过**（知识库检索返回5条来源） |
+| 四 · 告警引擎 | ✅ 通过 | ✅ 通过（不变） |
+| 五 · 设备控制 | ✅ 通过 | ✅ 通过（CONTROLLER 自动在线） |
+| 六 · 日志审计 | ⚠️ 部分通过 | ✅ **通过**（AOP自动记录6条审计日志） |
+
+- **结果**：5 个 P1 问题全部修复，6 大闭环全部通过
+- **变更文件清单**：
+  - 新建 7 个文件：ChromaInitializer.java, KnowledgeSeeder.java, AuditLog.java, AuditLogRepository.java, AuditAspect.java, network_security_config.xml, 2个知识文档
+  - 修改 8 个文件：ChromaRetrievalService.java, KnowledgeService.java, MqttSubscriber.java, SensorDataService.java, device_simulator.py, devices.json, AndroidManifest.xml, build.gradle
