@@ -2052,3 +2052,68 @@
 - **变更文件清单**：
   - 新建 7 个文件：ChromaInitializer.java, KnowledgeSeeder.java, AuditLog.java, AuditLogRepository.java, AuditAspect.java, network_security_config.xml, 2个知识文档
   - 修改 8 个文件：ChromaRetrievalService.java, KnowledgeService.java, MqttSubscriber.java, SensorDataService.java, device_simulator.py, devices.json, AndroidManifest.xml, build.gradle
+
+---
+## 2026-07-16（续）
+
+### 步骤51：本地部署测试 Bug 修复 | ✅ 完成
+
+- **时间**：23:00
+- **背景**：用户进行本地部署测试，发现 9 个影响系统正常运行的 Bug，逐一修复。
+- **操作**：
+
+**Bug #1：web/package.json 缺少依赖声明**
+- 根因：`package.json` 中 `dependencies` 和 `devDependencies` 块为空，`npm install` 不会安装任何包，导致 `node_modules/` 为空
+- 修复：添加完整依赖（7 个 runtime + 2 个 dev），版本号与 `package-lock.json` 保持一致
+- 文件：`web/package.json`
+
+**Bug #2：API 路径单复数不匹配（sensor vs sensors）**
+- 根因：前端 `/sensor/realtime`（单数），后端 `/api/v1/sensors/realtime`（复数），导致 404
+- 修复：`web/src/api/sensor.js` — 路径 `/sensor/realtime` → `/sensors/realtime`
+- 文件：`web/src/api/sensor.js`
+
+**Bug #3：和风天气 Mock 模式未实现**
+- 根因：`QWeatherService` 未读取 `weather.provider: mock` 配置，直接调用和风天气 API（使用假 Key），返回 400
+- 修复：新增 `@Value("${weather.provider:mock}")` 字段，`getCurrentWeather()` 和 `getForecast()` 方法开头增加 mock 检查分支，新增 `buildMockCurrent()` 和 `buildMockForecast()` 两个模拟数据生成方法（使用 ThreadLocalRandom 生成随机天气数据）
+- 文件：`backend/.../weather/service/QWeatherService.java`
+
+**Bug #4：未读告警数量端点缺失**
+- 根因：前端调用 `/alerts/unread-count` 但后端未实现该端点
+- 修复：`AlertController.java` 新增 `GET /unread-count` 端点 → `AlertService.java` 新增 `getUnreadCount()` 方法（调用 `AlertRepository.countByGreenhouseIdAndReadStatusFalse()`）
+- 文件：`backend/.../alert/controller/AlertController.java`、`backend/.../alert/service/AlertService.java`
+
+**Bug #5：数据库种子数据中文乱码**
+- 根因：`init_seed_data.sql` 导入时未指定 `--default-character-set=utf8mb4`，导致 UTF-8 中文字符被 MySQL 按照 latin1 再次编码（双重编码）
+- 修复：清空所有表 → `docker exec -i mysql --default-character-set=utf8mb4 < init_seed_data.sql` 重新导入
+- 文件：无代码变更（操作类修复）
+
+**Bug #6：ReportPage.vue 中 Switch 是 JS 保留字**
+- 根因：`Switch` 是 JavaScript 保留关键字（`switch` 语句），Vue 模板编译时会导致运行时引用失败，页面白屏
+- 修复：使用 import 别名 `Switch as SwitchIcon`，模板中 `<Switch />` → `<SwitchIcon />`
+- 文件：`web/src/views/export/ReportPage.vue`
+
+**Bug #7：Element Plus locale 空对象导致 dayjs 崩溃**
+- 根因：`{ locale: { el: {} } }` 传入空对象会破坏 dayjs 实例的 `.add()` 等方法，导致 `el-date-picker` 崩溃，连锁引发整个页面白屏
+- 修复：导入 `zhCn` 语言包和 `dayjs/locale/zh-cn`，`ElementPlus` 配置改为 `{ locale: zhCn }`，同时新增 `app.config.errorHandler` 全局错误处理便于调试
+- 文件：`web/src/main.js`
+
+**Bug #8：Vite 预构建缓存过期**
+- 根因：`node_modules/.vite/` 缓存了旧的依赖优化结果，修改 `package.json` 后热更新不生效
+- 修复：`rm -rf node_modules/.vite/` 清除缓存
+- 文件：无代码变更（操作类修复）
+
+- **复验结果**：
+  - Mock 天气 API：返回随机模拟天气数据 ✅
+  - Unread Count API：`GET /api/v1/alerts/unread-count?greenhouseId=1` → `{"code":200,"data":{"count":0}}` ✅
+  - 数据库中文：`SELECT real_name FROM users` → 系统管理员/张棚主/李专家 ✅
+  - 后端编译：`mvn package -DskipTests` BUILD SUCCESS ✅
+  - Spring Boot：正常启动（pid 27711, port 8080） ✅
+
+- **变更文件清单**：
+  - `web/package.json`（修改）— 添加 dependencies/devDependencies
+  - `web/src/api/sensor.js`（修改）— 修复 API 路径
+  - `web/src/views/export/ReportPage.vue`（修改）— Switch → SwitchIcon
+  - `web/src/main.js`（修改）— 修复 Element Plus locale + errorHandler
+  - `backend/.../weather/service/QWeatherService.java`（修改）— Mock 模式 + 2 个 mock 方法
+  - `backend/.../alert/controller/AlertController.java`（修改）— 新增 /unread-count 端点
+  - `backend/.../alert/service/AlertService.java`（修改）— 新增 getUnreadCount()
