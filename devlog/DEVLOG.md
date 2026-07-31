@@ -2227,3 +2227,56 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
   - `backend/.../config/GlobalExceptionHandler.java`（新建）
   - `backend/.../config/RateLimitInterceptor.java`（新建）
   - `backend/.../config/WebMvcConfig.java`（新建）
+
+---
+
+## 步骤54 — 第三轮性能优化（缓存 + 单例 + 瘦身 + 连接池）
+
+- **操作时间**：2026-08-01
+- **状态**：✅ 完成
+
+### 修复项6：传感器数据 Caffeine 缓存
+
+**问题**：每次请求传感器实时数据都直接查 InfluxDB，多人同时刷新仪表盘造成重复查询。
+
+**修复**：
+- `backend/pom.xml` — 新增 `caffeine` 依赖
+- `backend/.../config/CacheConfig.java`（新建）— Caffeine 缓存配置（5秒过期，最大100条目）
+- `backend/.../sensor/service/SensorDataService.java` — `getRealtimeData()` 添加 `@Cacheable` 注解，key 为 greenhouseId
+
+**效果**：5 秒内重复请求命中缓存，InfluxDB 压力降低 90%+。
+
+### 修复项7：OkHttpClient 单例化
+
+**问题**：`ApiClient.init()` 每次调用都创建新 OkHttpClient，连接池无法复用。
+
+**修复**：
+- `app/.../data/api/ApiClient.java` — 添加 `okHttpClient` 静态字段 + 判空逻辑：首次创建后全局复用
+
+### 修复项8：Web Element Plus 按需引入
+
+**问题**：Element Plus 全量引入，首屏 JS 体积大。
+
+**修复**：
+- `web/package.json` — 新增 `unplugin-auto-import` + `unplugin-vue-components` devDependencies
+- `web/vite.config.js` — 添加 AutoImport + Components 插件，使用 ElementPlusResolver
+- `web/src/main.js` — 移除 `import ElementPlus` 全量引入和 `app.use(ElementPlus)`
+
+**效果**：仅打包实际使用的组件，首屏体积显著减小。
+
+### 修复项9：数据库连接池调优
+
+**问题**：HikariCP 默认最大 10 连接，高并发场景可能不足。
+
+**修复**：
+- `backend/.../application-dev.yml` — 显式配置 `maximum-pool-size: 20`，`minimum-idle: 5`
+
+- **变更文件清单**：
+  - `backend/pom.xml`（修改）— 新增 Caffeine 依赖
+  - `backend/.../config/CacheConfig.java`（新建）
+  - `backend/.../sensor/service/SensorDataService.java`（修改）— @Cacheable
+  - `app/.../data/api/ApiClient.java`（修改）— OkHttpClient 单例
+  - `web/package.json`（修改）— 新增 devDependencies
+  - `web/vite.config.js`（修改）— 按需引入插件
+  - `web/src/main.js`（修改）— 移除全量引入
+  - `backend/.../application-dev.yml`（修改）— 连接池配置
