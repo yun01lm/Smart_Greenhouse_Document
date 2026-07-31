@@ -2280,3 +2280,58 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
   - `web/vite.config.js`（修改）— 按需引入插件
   - `web/src/main.js`（修改）— 移除全量引入
   - `backend/.../application-dev.yml`（修改）— 连接池配置
+
+---
+
+## 步骤55 — 审计问题修复（专家权限 + growth模块 + AI引擎配置）
+
+- **操作时间**：2026-08-01
+- **状态**：✅ 完成
+
+### 修复项1：专家权限打通
+
+**问题**：`PermissionAspect.java` 中 EXPERT 角色硬编码拒绝，授权流程完成但权限校验不通过。
+
+**修复**：
+- `backend/.../security/aop/PermissionAspect.java` — EXPERT 分支：从硬编码拒绝改为查询 `DataAuthorizationRepository`，验证是否有有效且未过期的 APPROVED 授权
+- `backend/.../repository/DataAuthorizationRepository.java` — 新增 `findTopByExpertIdAndGreenhouseIdAndStatusAndExpiresAtAfterOrderByApprovedAtDesc` 查询方法
+- `checkFunctionAccess` — 新增 EXPERT 放行（权限已由 checkGreenhouseAccess 校验）
+
+### 修复项2：growth 模块后端补全
+
+**问题**：Android `GrowthActivity` 已有 UI，但后端 `/api/v1/growth/*` 完全不存在。
+
+**修复**：
+- `backend/.../growth/controller/GrowthController.java`（新建）— 3 个端点：
+  - GET /latest?greenhouseId= → 最新长势评估
+  - GET /history?greenhouseId=&page=&size= → 分页历史
+  - GET /images?greenhouseId=&page=&size= → 截帧图片
+- `backend/.../growth/service/GrowthService.java`（新建）— 查询 `GrowthAssessmentRepository`
+- `backend/.../growth/dto/GrowthResponse.java`（新建）
+- `backend/.../growth/dto/GrowthImageResponse.java`（新建）
+- `backend/.../repository/GrowthAssessmentRepository.java` — 新增 `findByGreenhouseIdAndImagePathIsNotNull`
+
+### 复核：AI Provider 策略模式
+
+原审计报告标注"不存在"——经复核，代码中已有完整实现（15 个文件）：
+4 个策略接口 + 真实实现(Baidu/Xunfei/SiliconFlow/DeepSeek) + 预留实现(ResNet/Whisper) + Mock 实现 + `@ConditionalOnProperty` 条件注入。
+
+### 修复项3：AI 引擎配置管理
+
+**问题**：`admin-api.md` 声明的 `/api/v1/admin/ai/*` 端点不存在。
+
+**修复**：
+- `backend/.../admin/controller/AdminAiController.java`（新建）— 2 个端点：
+  - GET /config → 当前 AI Provider 配置 + 可用选项列表
+  - GET /status → 各引擎类型/Provider/状态/调用量
+
+- **变更文件清单**：
+  - `backend/.../security/aop/PermissionAspect.java`（修改）
+  - `backend/.../repository/DataAuthorizationRepository.java`（修改）
+  - `backend/.../growth/controller/GrowthController.java`（新建）
+  - `backend/.../growth/service/GrowthService.java`（新建）
+  - `backend/.../growth/dto/GrowthResponse.java`（新建）
+  - `backend/.../growth/dto/GrowthImageResponse.java`（新建）
+  - `backend/.../repository/GrowthAssessmentRepository.java`（修改）
+  - `backend/.../admin/controller/AdminAiController.java`（新建）
+  - `Smart_Greenhouse_Document/AUDIT_REPORT.md`（追加复审说明）

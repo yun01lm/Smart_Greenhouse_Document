@@ -182,3 +182,32 @@ health-api.md, knowledge-api.md, qa-api.md, weather-api.md
 > AI 抽象层、LSTM 预测等核心架构在代码中不存在。建议优先补齐 growth 模块。
 
 > 详细代码索引: [CODE_INDEX.md](../Smart-Greenhouse/CODE_INDEX.md)
+---
+
+## 补充说明（2026-08-01 复核）
+
+### 关于 AI Provider 策略模式的审计结果修正
+
+原审计报告标注 `tech/ai-layer.md` 描述的 AI Provider 策略模式"不存在"——此判断**有误**。
+
+经复核，代码已在 `backend/.../ai/` 包下完整实现：
+
+- 4 个策略接口：`DiseaseRecognitionProvider`, `SpeechRecognitionProvider`, `EmbeddingProvider`, `LlmProvider`
+- 真实实现：`BaiduRecognitionProvider`, `XunfeiSpeechProvider`, `SiliconFlowEmbeddingProvider`, `DeepSeekLlmProvider`
+- 预留实现：`ResNetRecognitionProvider`, `WhisperSpeechProvider`
+- Mock 实现：4 个对应 Mock Provider
+- 条件注入：通过 `@ConditionalOnProperty` + `application-dev.yml` 配置切换
+
+原报告中标注为"不存在"的核心架构**实际已存在且完整**。
+
+### 关于 growth 模块
+
+原报告标注 growth 模块"不存在"——已在本次迭代中补齐：
+- 新建 `GrowthController`（3 个端点）
+- 新建 `GrowthService`（latest / history / images 查询）
+- `GrowthAssessmentRepository` 新增查询方法
+
+### AI 引擎配置
+
+原报告标注 `/api/v1/admin/ai/*` 不存在——已在本次迭代中补齐：
+- 新建 `AdminAiController`（config / status 端点）
