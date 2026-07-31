@@ -2159,3 +2159,71 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
   - `backend/.../application-dev.yml`（修改）— MQTT 凭据
   - `simulator/devices.json`（修改）— MQTT 凭据
   - `tools/sensor_simulator.py`（修改）— MQTT 认证支持
+
+---
+
+## 步骤53 — 第二轮架构优化（Repository拆分 + 全局异常处理 + API限流）
+
+- **操作时间**：2026-08-01
+- **状态**：✅ 完成
+
+### 修复项3：拆分 Android GreenhouseRepository 上帝对象
+
+**问题**：`GreenhouseRepository.java` 单个类 900+ 行，包含所有 API 调用（认证/传感器/预警/控制/诊断/健康/QA/长势/专家），违反单一职责原则，修改一处可能牵动全局。
+
+**修复**：
+- 新建 `BaseRepository.java`（77行）— 公共骨架：线程池、Handler、回调接口、错误处理
+- 新建 9 个职责单一的 Repository：`AuthRepository`(49行), `SensorRepository`(65行), `AlertRepository`(118行), `ControlRepository`(80行), `DiagnosisRepository`(55行), `HealthRepository`(63行), `QaRepository`(69行), `GrowthRepository`(81行), `ExpertRepository`(241行)
+- 删除旧 `GreenhouseRepository.java`
+- 更新全部 11 个 ViewModel 的引用
+
+**效果**：900行单一文件 → 10个文件，最大241行，每个Repository职责明确、互不干扰。
+
+### 修复项4：后端全局异常处理器
+
+**问题**：缺少统一的异常处理，部分异常可能直接暴露 Java 堆栈信息到前端，造成信息泄露且用户体验差。
+
+**修复**：
+- 新建 `GlobalExceptionHandler.java` — @RestControllerAdvice 统一拦截所有异常：
+  - `BusinessException` → 提取业务错误码和消息
+  - `BadCredentialsException` → "用户名或密码错误"（不暴露具体原因）
+  - `AccessDeniedException` → 403
+  - `MethodArgumentNotValidException` → 参数校验失败详情
+  - `Exception`（兜底）→ "服务器内部错误，请稍后重试"（隐藏堆栈）
+
+### 修复项5：API 限流
+
+**问题**：无任何限流机制，登录接口存在暴力破解风险，高频调用可能拖垮服务器。
+
+**修复**：
+- 新建 `RateLimitInterceptor.java` — 基于内存的滑动窗口限流：
+  - 通用 API：每 IP 每分钟最多 60 次
+  - 登录接口 `/auth/login`：每 IP 每分钟最多 5 次
+  - 超限返回 HTTP 429 + 友好提示
+- 新建 `WebMvcConfig.java` — 注册拦截器到 `/api/v1/**`，排除 `/auth/register`
+
+- **变更文件清单**：
+  - `app/.../repository/BaseRepository.java`（新建）— 公共骨架
+  - `app/.../repository/AuthRepository.java`（新建）
+  - `app/.../repository/SensorRepository.java`（新建）
+  - `app/.../repository/AlertRepository.java`（新建）
+  - `app/.../repository/ControlRepository.java`（新建）
+  - `app/.../repository/DiagnosisRepository.java`（新建）
+  - `app/.../repository/HealthRepository.java`（新建）
+  - `app/.../repository/QaRepository.java`（新建）
+  - `app/.../repository/GrowthRepository.java`（新建）
+  - `app/.../repository/ExpertRepository.java`（新建）
+  - `app/.../repository/GreenhouseRepository.java`（删除）
+  - `app/.../viewmodel/LoginViewModel.java`（修改）
+  - `app/.../viewmodel/DashboardViewModel.java`（修改）
+  - `app/.../viewmodel/AlertViewModel.java`（修改）
+  - `app/.../viewmodel/ControlViewModel.java`（修改）
+  - `app/.../viewmodel/DiagnosisViewModel.java`（修改）
+  - `app/.../viewmodel/HealthViewModel.java`（修改）
+  - `app/.../viewmodel/QaViewModel.java`（修改）
+  - `app/.../viewmodel/GrowthViewModel.java`（修改）
+  - `app/.../viewmodel/ExpertViewModel.java`（修改）
+  - `app/.../viewmodel/HistoryViewModel.java`（修改）
+  - `backend/.../config/GlobalExceptionHandler.java`（新建）
+  - `backend/.../config/RateLimitInterceptor.java`（新建）
+  - `backend/.../config/WebMvcConfig.java`（新建）

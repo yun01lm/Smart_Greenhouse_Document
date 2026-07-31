@@ -55,7 +55,9 @@ author: AI助手
 | TASK-F11 | 角色适配功能开发 | F11 APP角色适配 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-F11.md](./TASK-F11.md) |
 | TASK-SEC01 | Android Token加密存储 | app | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-SEC01.md](./TASK-SEC01.md) |
 | TASK-SEC02 | MQTT Broker认证加固 | mqtt | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-SEC02.md](./TASK-SEC02.md) || TASK-G01 | 数据总览大屏开发 | G1 Web总览 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G01.md](./TASK-G01.md) |
-| TASK-G02 | 设备管理界面开发 | G2 Web设备 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G02.md](./TASK-G02.md) |
+| TASK-REF01 | Repository上帝对象拆分 | app | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF01.md](./TASK-REF01.md) |
+| TASK-REF02 | 全局异常处理器 | backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF02.md](./TASK-REF02.md) |
+| TASK-REF03 | API限流 | backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF03.md](./TASK-REF03.md) || TASK-G02 | 设备管理界面开发 | G2 Web设备 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G02.md](./TASK-G02.md) |
 | TASK-G03 | 用户与角色管理开发 | G3 Web用户管理 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G03.md](./TASK-G03.md) |
 | TASK-G04 | 知识库管理界面开发 | G4 Web知识库 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G04.md](./TASK-G04.md) |
 | TASK-G05 | 预警规则配置开发 | G5 Web预警配置 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G05.md](./TASK-G05.md) |
@@ -163,7 +165,9 @@ author: AI助手
 | 46 | TASK-F11 | 角色适配功能开发 |
 | TASK-SEC01 | Android Token加密存储 | app | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-SEC01.md](./TASK-SEC01.md) |
 | TASK-SEC02 | MQTT Broker认证加固 | mqtt | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-SEC02.md](./TASK-SEC02.md) || 47 | TASK-DOCS | 项目文档编写 |
-
+| TASK-REF01 | Repository上帝对象拆分 | app | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF01.md](./TASK-REF01.md) |
+| TASK-REF02 | 全局异常处理器 | backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF02.md](./TASK-REF02.md) |
+| TASK-REF03 | API限流 | backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF03.md](./TASK-REF03.md) |
 
 ### Phase 6: 代码审查安全加固
 
@@ -171,7 +175,11 @@ author: AI助手
 |------|--------|------|
 | 48 | TASK-SEC01 | Android Token加密存储 |
 | 49 | TASK-SEC02 | MQTT Broker认证加固 |
-
+| 50 | TASK-REF01 | Repository上帝对象拆分 |
+| 51 | TASK-REF02 | 全局异常处理器 |
+| 52 | TASK-REF03 | API限流 || TASK-REF01 | Repository上帝对象拆分 | app | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF01.md](./TASK-REF01.md) |
+| TASK-REF02 | 全局异常处理器 | backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF02.md](./TASK-REF02.md) |
+| TASK-REF03 | API限流 | backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF03.md](./TASK-REF03.md) |
 ---
 
 ## 模块依赖关系
