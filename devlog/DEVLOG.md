@@ -2117,3 +2117,45 @@
   - `backend/.../weather/service/QWeatherService.java`（修改）— Mock 模式 + 2 个 mock 方法
   - `backend/.../alert/controller/AlertController.java`（修改）— 新增 /unread-count 端点
   - `backend/.../alert/service/AlertService.java`（修改）— 新增 getUnreadCount()
+
+---
+
+## 步骤52 — 第一轮安全加固（Token加密 + MQTT认证）
+
+- **操作时间**：2026-08-01
+- **状态**：✅ 完成
+
+### 修复项1：Android Token 加密存储
+
+**问题**：JWT Token 明文存储在 SharedPreferences 中，root 设备或恶意应用可窃取 Token。
+
+**修复**：
+- `app/build.gradle` — 新增 `androidx.security:security-crypto:1.1.0-alpha06` 依赖
+- `app/.../data/local/TokenManager.java` — 将 SharedPreferences 替换为 EncryptedSharedPreferences（AES-256 加密，Android Keystore 硬件保护）
+- 加密方案：主密钥 AES256-GCM + Key AES256-SIV + Value AES256-GCM
+- `GreenhouseApplication.java` 已调用 `TokenManager.init(this)`，无需修改
+
+### 修复项2：MQTT 启用认证
+
+**问题**：Mosquitto Broker 允许匿名连接（`allow_anonymous true`），任何人可注入伪造数据或劫持控制指令。
+
+**修复**：
+- `mosquitto.conf` — `allow_anonymous false`，新增 `password_file` 和 `acl_file` 配置
+- `backend/.../application-dev.yml` — MQTT 用户名/密码默认值改为 `greenhouse / greenhouse_dev`
+- `simulator/devices.json` — 同上添加 MQTT 凭据
+- `tools/sensor_simulator.py` — 新增 `MQTT_USERNAME`/`MQTT_PASSWORD` 环境变量支持 + `username_pw_set()` 调用
+- 后端 `MqttConfig.java` 已从配置读取用户名/密码并设置到 MqttConnectOptions，无需修改
+
+**启动前注意**：首次启动需在 Mosquitto 容器内创建密码文件：
+```bash
+docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passwd greenhouse
+# 输入密码: greenhouse_dev
+```
+
+- **变更文件清单**：
+  - `app/build.gradle`（修改）— 新增 security-crypto 依赖
+  - `app/.../data/local/TokenManager.java`（修改）— SharedPreferences → EncryptedSharedPreferences
+  - `mosquitto.conf`（修改）— 禁用匿名 + 启用认证
+  - `backend/.../application-dev.yml`（修改）— MQTT 凭据
+  - `simulator/devices.json`（修改）— MQTT 凭据
+  - `tools/sensor_simulator.py`（修改）— MQTT 认证支持

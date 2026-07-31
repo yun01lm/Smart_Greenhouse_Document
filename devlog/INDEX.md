@@ -53,7 +53,8 @@ author: AI助手
 | TASK-F09 | 个人中心模块开发 | F9 APP个人中心 | ✅ completed | 2026-07-13 | 2026-07-13 | AI助手 | 否 | [TASK-F09.md](./TASK-F09.md) |
 | TASK-F10 | 专家咨询模块开发 | F10 APP专家咨询 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-F10.md](./TASK-F10.md) |
 | TASK-F11 | 角色适配功能开发 | F11 APP角色适配 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-F11.md](./TASK-F11.md) |
-| TASK-G01 | 数据总览大屏开发 | G1 Web总览 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G01.md](./TASK-G01.md) |
+| TASK-SEC01 | Android Token加密存储 | app | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-SEC01.md](./TASK-SEC01.md) |
+| TASK-SEC02 | MQTT Broker认证加固 | mqtt | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-SEC02.md](./TASK-SEC02.md) || TASK-G01 | 数据总览大屏开发 | G1 Web总览 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G01.md](./TASK-G01.md) |
 | TASK-G02 | 设备管理界面开发 | G2 Web设备 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G02.md](./TASK-G02.md) |
 | TASK-G03 | 用户与角色管理开发 | G3 Web用户管理 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G03.md](./TASK-G03.md) |
 | TASK-G04 | 知识库管理界面开发 | G4 Web知识库 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G04.md](./TASK-G04.md) |
@@ -160,7 +161,16 @@ author: AI助手
 | 顺序 | 任务ID | 标题 |
 |------|--------|------|
 | 46 | TASK-F11 | 角色适配功能开发 |
-| 47 | TASK-DOCS | 项目文档编写 |
+| TASK-SEC01 | Android Token加密存储 | app | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-SEC01.md](./TASK-SEC01.md) |
+| TASK-SEC02 | MQTT Broker认证加固 | mqtt | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-SEC02.md](./TASK-SEC02.md) || 47 | TASK-DOCS | 项目文档编写 |
+
+
+### Phase 6: 代码审查安全加固
+
+| 顺序 | 任务ID | 标题 |
+|------|--------|------|
+| 48 | TASK-SEC01 | Android Token加密存储 |
+| 49 | TASK-SEC02 | MQTT Broker认证加固 |
 
 ---
 

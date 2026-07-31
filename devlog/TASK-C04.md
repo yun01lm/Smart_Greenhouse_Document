@@ -77,3 +77,22 @@ MQTT消费链路：ESP32上报→MQTT Broker→MqttSubscriber解析→InfluxDB�
   - 修改 `MqttConfig.java`：移除本地 SUBSCRIBE_TOPIC 常量
   - 修改 `MqttSubscriber.java`：使用 MqttTopicConstants.DEVICE_DATA_WILDCARD 和 DEFAULT_QOS
   - 修改原因：MQTT Topic 在 MqttConfig/MqttSubscriber/ControlService/Device 四处分散定义，字符串拼接重复
+
+---
+
+## 代码审查安全加固记录（2026-08-01）
+
+### MQTT 认证加固（TASK-SEC02）
+
+**变更类型**：安全加固
+
+**修改文件**：
+- `mosquitto.conf` — `allow_anonymous false`，启用密码认证
+- `backend/.../application-dev.yml` — MQTT 凭据配置
+- `simulator/devices.json` — 模拟器凭据同步
+- `tools/sensor_simulator.py` — 新增认证调用
+
+**关键说明**：
+- 后端 `MqttConfig.java` 无需修改，已通过 `@ConfigurationProperties` 自动读取凭据
+- `MqttConnectOptions` 在 username/password 非空时自动设置认证
+- 向后兼容：未配置凭据时仍可匿名连接（仅开发环境）
