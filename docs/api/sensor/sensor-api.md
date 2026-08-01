@@ -181,3 +181,15 @@ Authorization: Bearer <token>
 | 3002 | 403 | 无该大棚访问权限 |
 | 1001 | 400 | 参数错误（时间范围/传感器类型无效） |
 | 1003 | 500 | 数据查询服务异常 |
+
+
+---
+
+## 🔧 修正说明（2026-08-01）
+
+以下端点文档中的 HTTP 方法与实际代码实现不一致，以代码为准：
+
+| 端点 | 文档方法 | 实际方法 | 说明 |
+|------|---------|---------|------|
+| /api/v1/sensors/history | GET | POST | 复杂查询需RequestBody（时间范围、聚合参数等），POST是正确的RESTful实践 |
+| /api/v1/sensors/compare | GET | POST | 多组对比需RequestBody（deviceIds数组等），POST是正确的RESTful实践 |
