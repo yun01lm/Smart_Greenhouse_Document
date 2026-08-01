@@ -2384,3 +2384,70 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 
 **修复**：
 - `Smart_Greenhouse_Document/docs/api/sensor/sensor-api.md`（追加）— 文档末尾追加修正说明，标注以代码为准
+
+---
+
+## 步骤57 — 第二轮安全加固+性能优化（B1-B4 + C1-C5）
+
+- **操作时间**：2026-08-01
+- **状态**：✅ 完成
+
+### B1: JWT Refresh Token
+**问题**：access token 2h过期后用户需重新登录，体验差。
+
+**修复**：
+- `JwtTokenProvider.java` — 新增 generateRefreshToken()(24h)、getUserIdFromExpiredToken()
+- `LoginResponse.java` — 新增 refreshToken 字段
+- `AuthController.java` — 新增 POST /api/v1/auth/refresh
+- `AuthService.java` — register/login 同时生成 refreshToken
+- `web/src/utils/request.js` — 401响应拦截器自动用refreshToken换新token
+
+### B2: CORS白名单
+**问题**：SecurityConfig未配置CORS，跨域请求可能被浏览器拦截。
+
+**修复**：
+- `SecurityConfig.java` — 添加 cors() 配置，允许所有origin（生产需收紧）
+
+### B3: 密码复杂度校验
+**问题**：注册时接受任意强度密码。
+
+**修复**：
+- `AuthService.java` — register()方法添加密码校验：>=8位 + 含字母 + 含数字
+
+### B4: 登录失败锁定
+**问题**：无失败次数限制，可暴力破解。
+
+**修复**：
+- `User.java` — 新增 loginFailCount、lockedUntil 字段
+- `AuthService.java` — login()失败计数，>=5次锁定30分钟；成功后清零
+
+### C1: 知识库上传异步
+**问题**：文档上传后同步索引阻塞请求线程。
+
+**修复**：
+- `SmartGreenhouseApplication.java` — 添加 @EnableAsync
+- `KnowledgeService.java` — 文档处理管道添加 @Async
+
+### C2: WebSocket指数退避
+**问题**：断线重连固定5s，服务端恢复时可能惊群。
+
+**修复**：
+- `web/src/utils/websocket.js` — 指数退避 1s→2s→4s→8s→max30s，连接成功重置
+
+### C3: Android RecyclerView优化
+**问题**：多处RecyclerView未设setHasFixedSize。
+
+**修复**：
+- DashboardFragment/AlertFragment/ControlFragment/QaFragment/ChatActivity — 添加 setHasFixedSize(true)
+
+### C4: Android网络缓存
+**问题**：每次页面切换都重新请求数据。
+
+**修复**：
+- `BaseRepository.java` — 添加LRU内存缓存（50条/30s TTL），getFromCache()/putToCache()
+
+### C5: Web API去重
+**问题**：多组件同时请求相同数据可能重复调用。
+
+**修复**：
+- `web/src/utils/request.js` — 请求拦截器：相同请求300ms窗口内去重
