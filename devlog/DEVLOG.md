@@ -2451,3 +2451,39 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 
 **修复**：
 - `web/src/utils/request.js` — 请求拦截器：相同请求300ms窗口内去重
+
+---
+
+## 步骤58 — 第三轮Android收尾（D1-D3）
+
+- **操作时间**：2026-08-01
+- **状态**：✅ 完成
+
+### D1: Android线程池弹性化
+**问题**：ApiClient固定4线程，高并发排队。
+
+**修复**：
+- `ApiClient.java` — `Executors.newFixedThreadPool(4)` → `Executors.newCachedThreadPool()`
+
+### D2: WebSocket心跳后台线程
+**问题**：StompClient心跳用MainLooper，与UI线程竞争。
+
+**修复**：
+- `StompClient.java` — 心跳Handler从`Handler(Looper.getMainLooper())`改为后台`HandlerThread("stomp-heartbeat")`，start/stop时正确管理线程生命周期
+
+### D3: 图片缓存
+**状态**：已有Glide — `DiagnosisResultActivity`和`DiagnosisHistoryAdapter`均已使用`Glide.with().load()`，无需额外修改。图片压缩用的`BitmapFactory.inSampleSize`是正确做法。
+
+### D4: 硬件模拟器验证
+**结果**：
+- ✅ Python语法检查通过
+- ✅ MQTT Topic格式匹配后端（wildcard `greenhouse/+/device/+`）
+- ✅ JSON payload格式匹配（greenhouseId/deviceId/sensorType/value/timestamp）
+- ⚠️ 依赖（paho-mqtt, influxdb-client）需手动安装：`python -m pip install paho-mqtt influxdb-client`
+
+### D5: 全流程跑通验证
+**结果**：
+- ✅ Docker 29.4.3 已安装
+- ✅ Node.js v24.15.0，npm依赖已安装
+- ✅ Java 21.0.8
+- ⚠️ Docker Desktop未启动（WSL2 backend），需用户手动启动后执行验证清单
