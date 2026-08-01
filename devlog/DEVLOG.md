@@ -2530,3 +2530,63 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - ✅ mvn clean compile（Maven 3.9.16 + JDK 21.0.8）构建成功
 - ✅ common 模块 4 个源文件 + backend 模块 206 个源文件全部编译通过
 - 📌 IDEA 中需将 Maven home 配置为 F:/apache-maven-3.9.16-bin/apache-maven-3.9.16，JDK 使用 21
+
+
+---
+
+## 步骤60 — 本地运行验证 + Web端修复 + 数据库修复
+
+- **操作时间**：2026-08-02
+- **状态**：✅ 完成
+- **背景**：本地启动全栈验证（后端 8080 + Web 3000 + 模拟器），发现 Web 端白屏、数据库中文乱码、登录被误限流等问题并全部修复。
+
+### E1: Web 端 UTF-8 BOM 清理
+**问题**：4 个文件带 BOM 导致 Vite 报 Unexpected token JSON 解析失败，页面白屏。
+
+**修复**：
+- `web/package.json` — 移除 BOM
+- `web/vite.config.js` — 移除 BOM
+- `web/src/main.js` — 移除 BOM
+- `web/src/api/qa.js` — 移除 BOM
+
+### E2: router/index.js 路由块错乱
+**问题**：owner 和 qa 两个路由块在编辑中被搅乱，第 71 行多出左花括号，name: Owner 等字段错位，导致 Unexpected token 白屏。
+
+**修复**：
+- `web/src/router/index.js` — 重新排列为两个正确的路由块（owner → 棚主管理、qa → AI 问答），node --check 语法验证通过
+
+### E3: request.js 缺失 export default
+**问题**：request.js 定义了 axios 实例和拦截器但未导出，导致 auth.js、sensor.js 等 import request from 全部报错。
+
+**修复**：
+- `web/src/utils/request.js` — 末尾补上 export default request；全量检查所有默认导入/导出匹配
+
+### E4: 模拟器环境配置
+**问题**：模拟器缺 paho-mqtt 依赖；devices.json 带 BOM 导致 JSON 解析失败；机器上有 MinGW Python 3.12 和系统 Python 3.14 两个环境，依赖安装易混淆。
+
+**修复**：
+- 安装 paho-mqtt 2.1.0 并复制到 MinGW Python（E:/mingw/ucrt64/lib/python3.12/site-packages）
+- `simulator/devices.json` — 移除 BOM
+- 模拟器需用 E:/mingw/ucrt64/bin/python.exe 启动（有 paho-mqtt 的环境）
+
+### E5: MySQL 中文乱码修复
+**问题**：种子数据导入时未指定 utf8mb4 字符集，中文全部存成问号（用户姓名、大棚名、设备名）。
+
+**修复**：
+- 用 --default-character-set=utf8mb4 重新导入 tools/init_seed_data.sql
+- 手动 UPDATE 修复 users 表 real_name 和 greenhouses 表 location/crop_type/province/city/district 字段
+- 删除测试残留账号 test_user_082（无大棚，且 real_name 为乱码）
+
+### E6: RateLimitInterceptor 限流计数 bug
+**问题**：登录接口和普通 API 共用同一个 per-IP 计数器，前端页面持续轮询会把 count 推高，导致登录接口被误判 429（count > 5），登录失败导致页面拉不到数据。
+
+**修复**：
+- `backend/.../config/RateLimitInterceptor.java` — 登录接口与普通 API 分开计数（counterKey 区分 login 与 api 前缀）
+
+### 验证结果
+- ✅ 后端 8080 启动成功，登录/大棚/设备/实时数据接口全部返回正确
+- ✅ 中文正常：owner01 → 张棚主；大棚 → 一号番茄大棚（河北省 石家庄市）
+- ✅ 8 个设备全部 ONLINE，传感器实时值正常（温度/湿度/光照/CO2/土壤）
+- ✅ Web 端 Vite 正常编译，页面可访问
+- ✅ 模拟器 → MQTT → 后端 → InfluxDB 数据通路验证通过
+- 📌 预置账号：admin / owner01 / expert01 / worker01，密码均为 123456
