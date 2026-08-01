@@ -60,7 +60,8 @@ author: AI助手
 | TASK-REF03 | API限流 | backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-REF03.md](./TASK-REF03.md) || TASK-G02 | 设备管理界面开发 | G2 Web设备 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G02.md](./TASK-G02.md) |
 | TASK-PERF01 | 传感器数据Caffeine缓存 | sensor | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-PERF01.md](./TASK-PERF01.md) |
 | TASK-PERF02 | OkHttpClient单例+Web瘦身+连接池 | app,web,backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-PERF02.md](./TASK-PERF02.md) || TASK-G03 | 用户与角色管理开发 | G3 Web用户管理 | ✅ completed | 2026-07-14 | 2026-07-14 | AI助手 | 否 | [TASK-G03.md](./TASK-G03.md) |
-| TASK-FIX01 | 审计修复(专家+growth+AI引擎) | backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-FIX01.md](./TASK-FIX01.md) || TASK-G04 | 知识库管理界面开发 | G4 Web知识库 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G04.md](./TASK-G04.md) |
+
+| TASK-FIX02 | 第一轮功能补全（A1-A6） | multi | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-FIX02.md](./TASK-FIX02.md) || TASK-FIX01 | 审计修复(专家+growth+AI引擎) | backend | ✅ completed | 2026-08-01 | 2026-08-01 | AI助手 | 否 | [TASK-FIX01.md](./TASK-FIX01.md) || TASK-G04 | 知识库管理界面开发 | G4 Web知识库 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G04.md](./TASK-G04.md) |
 | TASK-G05 | 预警规则配置开发 | G5 Web预警配置 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G05.md](./TASK-G05.md) |
 | TASK-G06 | 数据导出报表开发 | G6 Web数据导出 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G06.md](./TASK-G06.md) |
 | TASK-G07 | 系统监控界面开发 | G7 Web系统监控 | ✅ completed | 2026-07-15 | 2026-07-15 | AI助手 | 否 | [TASK-G07.md](./TASK-G07.md) |

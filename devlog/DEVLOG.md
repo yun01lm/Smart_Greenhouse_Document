@@ -2335,3 +2335,52 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
   - `backend/.../repository/GrowthAssessmentRepository.java`（修改）
   - `backend/.../admin/controller/AdminAiController.java`（新建）
   - `Smart_Greenhouse_Document/AUDIT_REPORT.md`（追加复审说明）
+
+---
+
+## 步骤56 — 第一轮功能补全（A1-A6）
+
+- **操作时间**：2026-08-01
+- **状态**：✅ 完成
+
+### A3: 五级地址补全
+**问题**：Greenhouse实体已有town/village字段，但AdminOwnerController.listOwnerGreenhouses()返回的Map遗漏这两个字段。
+
+**修复**：
+- `backend/.../admin/controller/AdminOwnerController.java` — listOwnerGreenhouses() 增加 town、village 字段
+
+### A5: 员工更新端点
+**问题**：PermissionController缺少PUT端点更新员工基本信息（姓名、手机号）。
+
+**修复**：
+- `backend/.../permission/dto/UpdateEmployeeRequest.java`（新建）— 包含 realName、phone
+- `backend/.../permission/controller/PermissionController.java`（修改）— 新增 PUT /{employeeId}
+- `backend/.../permission/service/PermissionService.java`（修改）— 新增 updateEmployee() 方法，含手机号唯一性校验
+
+### A4: 天气预报结合预警
+**问题**：AlertRule.RuleType.WEATHER 已定义但AlertEngine未实现。
+
+**修复**：
+- `backend/.../SmartGreenhouseApplication.java`（修改）— 添加 @EnableScheduling
+- `backend/.../repository/AlertRuleRepository.java`（修改）— 新增 findByRuleTypeAndEnabledTrue(WEATHER)
+- `backend/.../alert/service/AlertEngine.java`（修改）— 
+  - 新增 checkWeatherRule()：传感器数据异常时结合天气判断
+  - 新增 scheduledWeatherCheck()：每30分钟定时巡检极端天气（高温>38°C/霜冻<0°C/大风>10.7m/s/暴雨）
+
+### A1+A2: TTS语音播报 + Web QA页面 + 引用来源展示
+**背景**：Android端已有完整TTS（TextToSpeech + ChatAdapter），但Web端完全没有AI问答页面。
+
+**修复**：
+- `web/src/api/qa.js`（新建）— QA API 封装（askText/askVoice/getRecords）
+- `web/src/views/qa/QaPage.vue`（新建）— 
+  - 聊天气泡界面（用户/AI/错误三种样式）
+  - 引用来源展示（📚 参考来源：+ 分类标签）
+  - TTS 播放按钮（调用浏览器 SpeechSynthesis API，支持播放/停止）
+- `web/src/router/index.js`（修改）— 添加 /qa 路由
+- `web/src/layouts/MainLayout.vue`（修改）— 侧边栏添加「AI 问答」菜单
+
+### A6: sensor history/compare HTTP方法文档修正
+**问题**：sensor-api.md 将 history 和 compare 标为 GET，实际代码为 POST。
+
+**修复**：
+- `Smart_Greenhouse_Document/docs/api/sensor/sensor-api.md`（追加）— 文档末尾追加修正说明，标注以代码为准
