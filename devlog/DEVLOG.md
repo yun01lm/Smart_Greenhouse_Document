@@ -2487,3 +2487,46 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - ✅ Node.js v24.15.0，npm依赖已安装
 - ✅ Java 21.0.8
 - ⚠️ Docker Desktop未启动（WSL2 backend），需用户手动启动后执行验证清单
+
+---
+
+## 步骤59 — 后端编译修复（Maven 3.9.16 + JDK 21）
+
+- **操作时间**：2026-08-02
+- **状态**：✅ 完成
+- **背景**：IDEA 内使用 JDK 21.0.11 编译 backend 模块持续报 java.lang.AssertionError（javac VirtualParser.errPos 崩溃），更换为 Maven 3.9.16 + JDK 21.0.8 后仍无法编译，经排查发现为多个源文件语法错误导致。
+
+### FIX-A: AlertEngine.java 括号结构错误 + 引用错误
+**问题**：check() 方法 try 块闭合括号缩进错位；checkWeatherRule() 和 scheduledWeatherCheck() 存在多余闭合大括号；引用了不存在的 WeatherService 类；调用了错误的 getter 名称（getMinValue/getMaxValue）。
+
+**修复**：
+- backend/.../alert/service/AlertEngine.java — 重写整个文件，修正所有括号配对；WeatherService → QWeatherService；getMinValue() → getMinThreshold()、getMaxValue() → getMaxThreshold()
+
+### FIX-B: PermissionAspect.java 缺少闭合括号 + 重复变量
+**问题**：checkGreenhouseAccess() 中 case EXPERT -> {} 缺少闭合大括号；case EXPERT 内局部变量 auth 与方法的 Authentication auth 重名。
+
+**修复**：
+- backend/.../security/aop/PermissionAspect.java — 补充 case EXPERT 的闭合大括号；重命名局部变量 auth → dataAuth
+
+### FIX-C: GlobalExceptionHandler.java 错误导入
+**问题**：导入了不存在的包 org.springframework.bind.*，应为 org.springframework.web.bind.*。
+
+**修复**：
+- backend/.../config/GlobalExceptionHandler.java — 修正 3 个 import：MissingServletRequestParameterException、ExceptionHandler、RestControllerAdvice
+
+### FIX-D: PermissionService.java 悬挂 @Transactional
+**问题**：updateEmployee() 上方残留无方法的 @Transactional 注解（原 removeEmployee 方法已下移但注解未跟随），导致 @Transactional 不是可重复的批注接口 编译错误。
+
+**修复**：
+- backend/.../permission/service/PermissionService.java — 删除悬挂的 @Transactional；为 removeEmployee() 补上 @Transactional 并修正缩进
+
+### FIX-E: UTF-8 BOM 清理
+**问题**：文件首部存在 \ufeff BOM 字符导致 非法字符: '\ufeff' 错误。
+
+**修复**：
+- 全量扫描 backend/src/main/java 下所有 .java 文件，统一转换为 UTF-8 无 BOM 编码
+
+### 验证结果
+- ✅ mvn clean compile（Maven 3.9.16 + JDK 21.0.8）构建成功
+- ✅ common 模块 4 个源文件 + backend 模块 206 个源文件全部编译通过
+- 📌 IDEA 中需将 Maven home 配置为 F:/apache-maven-3.9.16-bin/apache-maven-3.9.16，JDK 使用 21
