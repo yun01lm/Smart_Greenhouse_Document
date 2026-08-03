@@ -2730,3 +2730,43 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 地区健康评分规则为初版（严重8/警告3/提示1 加权扣分），后续可按业务细化
 - 管理员总览的天气当前为 Mock 数据源，接入和风天气后自动生效（按所选地区城市查询）
+
+---
+
+## 步骤66 — R4 管理员设备管理（总体统计 + 按农户管理设备）
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成
+- **背景**：按需求第 4 条，系统管理员设备管理页改为"总体视角"：先看设备/农户总体统计，再按农户查找并进入其名下设备管理；同时补齐管理员代管设备的增删改权限（原 update/delete 仅校验棚主本人，ADMIN 会被拒绝）。
+
+### 后端改动
+- `backend/.../module/admin/service/AdminDeviceService.java`（新增）— 管理员设备服务：
+  - 按地区范围统计设备总体（设备总数/在线/离线/告警、农户总数/在线、大棚数）；农户在线口径 = 名下至少 1 台设备在线（ONLINE 或 ALARM）
+  - 查询某棚主名下全部设备，按大棚分组返回（大棚名/位置/设备明细）
+- `backend/.../module/admin/controller/AdminDeviceController.java`（新增）— 三个接口：
+  - `GET /api/v1/admin/devices/overview`：地区范围内设备总体统计
+  - `GET /api/v1/admin/devices/owners`：地区+关键词查询棚主列表（复用 RegionService.getRegionOwners）
+  - `GET /api/v1/admin/devices/owners/{ownerId}/devices`：某棚主名下全部设备（按大棚分组）
+- `backend/.../module/device/service/DeviceService.java` — 权限修复：新增 `checkOwnerOrAdmin(userId, greenhouse)` 辅助方法，create/update/delete 三处统一走该方法（ADMIN 可代管任意大棚设备，OWNER 仅限自己大棚）
+
+### 前端改动
+- `web/src/api/admin-device.js`（新增）— 管理员设备接口封装
+- `web/src/views/devices/AdminDevicePage.vue`（新增）— 管理员设备管理页：
+  - 地区级联选择（复用 RegionCascader）+ 用户名/姓名/手机号关键词搜索 + 查询/重置
+  - 总体统计卡：设备总数、设备在线（离线/告警）、农户在线/总数、大棚数
+  - 农户列表（含大棚数/状态）→ 点击"设备管理"进入弹窗，按大棚分组展示设备，支持添加/编辑/删除（复用原设备接口，管理员代管）
+- `web/src/views/devices/DevicePage.vue` — 按角色分支：ADMIN 渲染 AdminDevicePage；OWNER/WORKER 保留原按大棚的设备列表/分组
+
+### 验证
+- ✅ `mvn compile` 通过（阿里云镜像联网编译）
+- ✅ 接口实测（admin/123456）：
+  - 总体统计 = 1 大棚 / 1 农户在线 / 8 设备在线（离线 0 / 告警 0）
+  - 按河北省筛选正常（1 大棚 8 设备）；无数据地区（广东省）返回 0
+  - 关键词 owner01 命中 1 户；棚主设备查询：owner01 → 一号番茄大棚 8 台设备
+- ✅ Vite 编译 admin-device.js / AdminDevicePage.vue / DevicePage.vue 均返回 200
+- ✅ 后端重启（8080）后接口实测通过
+
+### 说明
+- 管理员设备增删改复用原有设备接口（后端已允许 ADMIN 代管）
+- 设备在线口径与 R3 管理员总览一致（ONLINE + ALARM 视为在线）
+- 下一步：R5 用户管理地区筛选
