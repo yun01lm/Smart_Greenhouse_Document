@@ -2770,3 +2770,43 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 管理员设备增删改复用原有设备接口（后端已允许 ADMIN 代管）
 - 设备在线口径与 R3 管理员总览一致（ONLINE + ALARM 视为在线）
 - 下一步：R5 用户管理地区筛选
+
+---
+
+## 步骤67 — R5 用户管理地区筛选（角色 + 五级地区 + 关键词组合筛选）
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成
+- **背景**：按需求第 5 条，用户管理页在保留角色筛选的基础上增加地区筛选（省/市/县/乡镇/村），实现精准定位用户；同时将原仅前端的用户名/手机号搜索改为后端过滤，地区+关键词组合查询一次完成。
+
+### 后端改动
+- `backend/.../repository/GreenhouseRepository.java` — 新增 `findByOwnerIdIn(Collection<Long>)` 批量查询棚主大棚
+- `backend/.../module/admin/dto/UserSummaryResponse.java` — 新增 `regionText` 字段（地区归属文本）
+- `backend/.../module/admin/service/AdminService.java` — `listUsers` 扩展为 角色 + 五级地区 + 关键词 组合筛选：
+  - 地区归属推导：OWNER 按其名下大棚地区；WORKER 按其所属棚主（ownerId）名下大棚地区；ADMIN/EXPERT 无大棚属性，启用地区筛选时不出现
+  - 地区归属文本批量计算（先收集棚主ID一次查询，避免逐用户 N+1）
+  - 关键词匹配用户名/姓名/手机号
+- `backend/.../module/admin/controller/AdminController.java` — `GET /api/v1/admin/users` 增加 province/city/district/town/village/keyword 参数
+
+### 前端改动
+- `web/src/views/users/UserList.vue`：
+  - 工具栏新增地区级联选择器（复用 RegionCascader）+ 查询/重置按钮
+  - 表格新增"所属地区"列（显示省/市/县/乡镇/村）
+  - 筛选逻辑全部改由后端完成（原角色/关键词前端过滤移除），前端仅分页
+
+### 数据修复
+- `users` 表：`worker01` 原 `owner_id` 为 NULL（历史数据未关联棚主），已更新为 `owner_id=2`（owner01），使其可按所属棚主推导地区，技术员地区筛选可验证
+
+### 验证
+- ✅ `mvn compile` 通过
+- ✅ 接口实测（admin/123456）：
+  - 全量 5 用户；role=OWNER 返回 2 户
+  - 河北筛选 → owner01（地区：河北省/石家庄市/藁城区）
+  - WORKER+河北 → worker01（通过 owner01 推导地区）
+  - 河北+关键词 owner → 1 条；广东（无数据）→ 0 条
+  - ADMIN/EXPERT 无大棚属性，地区筛选时不出现
+- ✅ Vite 编译 UserList.vue 200
+
+### 说明
+- 地区归属依赖大棚登记字段与 users.owner_id；后续新注册技术员需正确关联棚主，否则无法按地区定位
+- 下一步：R6 知识库修复（分类乱码 + 上传链路 + 向量化）
