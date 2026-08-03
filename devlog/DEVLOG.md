@@ -2856,3 +2856,40 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 真实向量化（SiliconFlow bge-m3）已就绪：在 `.env.local` 填入 `SILICONFLOW_API_KEY` 并将 `AI_EMBEDDING_PROVIDER=siliconflow` 即可启用（当前 Mock 保证系统可跑通全流程）
 - 当前种子数据由 classpath 资源生成，上传目录为运行时 `backend/uploads/`（已 gitignore）
 - 下一步：R7 AI 问答真实化（DeepSeek + 农业域守卫），同样通过 `.env.local` 注入
+
+---
+
+## 步骤69 — R7 AI 问答真实化准备 + 农业域守卫（防盗用）
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成（代码与守卫链路；真实 DeepSeek 激活待用户提供 Key）
+- **背景**：按需求第 1 条后半，AI 问答需接入真实 LLM 且限定农业领域，防止被他人盗用 API 额度。R6 已完成 Key 基础设施（.env.local + 环境变量注入），本轮实现农业域守卫 + 提示词强化 + provider 切换就绪。
+
+### 改动清单
+
+#### 后端
+- `backend/.../qa/service/AgricultureDomainGuard.java`（新增）— 农业域守卫：
+  - 三层判定：PASS（命中农业关键词：作物/种植/施肥/病虫害/大棚/灌溉/土壤等约 90 个）→ 放行；REJECT（命中明确非农意图：写诗/写代码/翻译/作业/计算/股票/游戏等，约 50 个，优先于农业词判断）→ 直接拒绝不调用 LLM；UNCERTAIN（无法判断）→ 放行交由 LLM 按提示词约束
+  - 轻量关键词预检，零外部依赖、毫秒级响应；后续如需更强判定可替换为意图分类模型
+- `backend/.../qa/service/RagQaService.java` — 接入守卫：
+  - `askText`：REJECT 时保存被拒记录（审计用）并返回农业引导回答（不消耗 LLM）
+  - `generateAnswerOnly`（语音问答、知识库测试页共用）：REJECT 时直接返回引导回答
+  - 新增 `REJECT_ANSWER` 固定引导语；开关配置 `greenhouse.ai.rag.agriculture-guard-enabled`（默认 true，可关闭）
+- `backend/src/main/resources/application-dev.yml` — 系统提示词强化：明确"只回答农业相关问题，与农业无关（写诗/编程/翻译/闲聊/时事）必须明确拒绝，不得回答非农内容"
+
+#### 配置（真实化激活入口，已就绪）
+- `ai.llm.provider` 已环境变量化（R6）：在 `.env.local` 填入 `DEEPSEEK_API_KEY` 并设 `AI_LLM_PROVIDER=deepseek` 即启用真实 DeepSeek 问答（Key 不入库，start_all.bat 注入）
+
+### 验证（Mock 路径，守卫逻辑与真实模式一致）
+- ✅ `mvn compile` 通过
+- ✅ 守卫用例（UTF-8 正确编码实测）：
+  - 农业问题"番茄定植密度是多少/番茄叶子发黄是什么原因/大棚温度多少合适" → 放行进 LLM
+  - "帮我写一首关于春天的诗"、"帮我写一首关于番茄种植的诗"（写一首优先拦截）、"写一段Python代码实现冒泡排序"、"1+1等于几"、"把这段话翻译成英文" → 返回农业引导回答，不调用 LLM
+  - 边界"今天天气怎么样适合浇水吗" → UNCERTAIN 放行（交由 LLM 判定）
+- ✅ 被拒问题均保存 QA 记录（审计）；知识库测试接口同样受守卫保护
+- ✅ 后端重启运行正常
+
+### 说明与后续
+- 真实 DeepSeek 问答待用户提供 Key 后激活验证（.env.local：`DEEPSEEK_API_KEY=...` + `AI_LLM_PROVIDER=deepseek`）；SiliconFlow 嵌入 Key 暂缓（用户暂无），向量化保持 Mock
+- 语音问答 ASR 当前为 Mock provider，真实语音识别（Xunfei/Whisper）后续按需接入
+- 下一步：R8 菜单与权限收口（预警配置/数据导出仅 OWNER/WORKER + 导出修复）
