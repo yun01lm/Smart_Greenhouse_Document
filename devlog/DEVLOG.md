@@ -2590,3 +2590,33 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - ✅ Web 端 Vite 正常编译，页面可访问
 - ✅ 模拟器 → MQTT → 后端 → InfluxDB 数据通路验证通过
 - 📌 预置账号：admin / owner01 / expert01 / worker01，密码均为 123456
+
+---
+
+## 步骤61 — Mosquitto 认证持久化修复 + 一键启动脚本
+
+- **操作时间**：2026-08-03
+- **状态**：✅ 完成
+- **背景**：电脑重启后 Mosquitto 容器因认证文件（passwd/acl）未持久化而反复重启；同时为用户提供一键启动脚本，双击即可自动拉起 Docker 容器、后端、Web 前端与设备模拟器并打开浏览器。
+
+### E1: Mosquitto 认证文件持久化
+**问题**：passwd/acl 认证文件未放入数据卷，容器重建或重启后丢失，导致认证失败、容器反复重启。
+
+**修复**：
+- mosquitto/（新增目录）— 认证文件源文件 passwd、acl 纳入仓库版本管理
+- mosquitto.conf — password_file / acl_file 指向数据卷路径 /mosquitto/data/passwd、/mosquitto/data/acl
+- docker-compose.yml — 清理无效挂载，挂载 mosquitto_data 卷至 /mosquitto/data，保留配置只读挂载
+- 已把认证文件复制进数据卷（docker cp），重启容器后认证正常、容器稳定运行
+
+### E2: 一键启动脚本 start_all.bat
+**问题**：手动启动环节多（Docker 容器、后端、Web、模拟器、浏览器），初版脚本存在批处理括号陷阱，导致“已在运行”与“启动”两个分支同时执行（后端被二次启动、端口冲突）。
+
+**修复**：
+- 新增 start_all.bat — 一键流程：环境检查（Maven / npm / Python 路径）→ Docker 引擎检查 → 容器拉起（docker compose up -d）→ 后端（8080 未监听则 mvn spring-boot:run）→ Web（3000 未监听则 npm run dev，首次自动 npm install）→ 设备模拟器（未运行则 python device_simulator.py --mode normal --config devices.json）→ 等待就绪 → 自动打开浏览器 http://localhost:3000
+- 修复批处理陷阱：if/else 代码块内 echo 的 ASCII 括号（如 (8080)）会提前截断代码块导致两个分支都执行 → 改为“端口8080”文案；模拟器进程检测（PowerShell 命令）移到代码块外执行
+- npm 调用采用 call %NPM% run dev 方式，路径引用验证通过
+
+### 验证结果
+- ✅ 重启后 Mosquitto 容器稳定运行，MQTT 连接正常
+- ✅ start_all.bat 全服务运行态下各环节正确显示“已在运行”，退出码 0
+- ✅ 后端 8080 / Web 3000 / 模拟器保持原进程运行，无重复启动

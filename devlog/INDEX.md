@@ -220,3 +220,4 @@ C22(生长周期) → F7(长势评估)
 | TASK-FIX04 | 后端编译修复（Maven + JDK 21） | backend | ✅ completed | 2026-08-02 | 2026-08-02 | AI助手 | 否 | [TASK-FIX04.md](./TASK-FIX04.md) |
 
 | TASK-FIX05 | 本地运行验证 + Web端修复 + 数据库修复 | web,backend,simulator | ✅ completed | 2026-08-02 | 2026-08-02 | AI助手 | 否 | [TASK-FIX05.md](./TASK-FIX05.md) |
+| TASK-FIX06 | Mosquitto 认证持久化 + 一键启动脚本 | infra,devops | ✅ completed | 2026-08-03 | 2026-08-03 | AI助手 | 否 | [TASK-FIX06.md](./TASK-FIX06.md) |
