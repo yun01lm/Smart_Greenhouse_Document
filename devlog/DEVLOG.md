@@ -2893,3 +2893,25 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 真实 DeepSeek 问答待用户提供 Key 后激活验证（.env.local：`DEEPSEEK_API_KEY=...` + `AI_LLM_PROVIDER=deepseek`）；SiliconFlow 嵌入 Key 暂缓（用户暂无），向量化保持 Mock
 - 语音问答 ASR 当前为 Mock provider，真实语音识别（Xunfei/Whisper）后续按需接入
 - 下一步：R8 菜单与权限收口（预警配置/数据导出仅 OWNER/WORKER + 导出修复）
+
+---
+
+## 步骤70 — R7 真实 DeepSeek 问答激活验证（用户 Key 已配置）
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成
+- **背景**：R7 代码就绪后，用户已在 `.env.local` 填入真实 `DEEPSEEK_API_KEY`，本轮切换 `AI_LLM_PROVIDER=deepseek` 并完成真实链路验证。
+
+### 操作
+- `.env.local`（gitignored，不入库）：`DEEPSEEK_API_KEY` 已由用户填入；`AI_LLM_PROVIDER=mock → deepseek`；`AI_EMBEDDING_PROVIDER` 保持 mock（SiliconFlow Key 暂缓）
+- 后端重启：启动前读取 `.env.local` 注入进程环境变量（`DEEPSEEK_API_KEY`、`AI_LLM_PROVIDER`），Key 全程不落库、不进日志
+- 环境变量注入方式与 `start_all.bat` 第 0 步逻辑一致，用户后续用一键启动脚本也会自动加载
+
+### 验证（真实调用 DeepSeek API）
+- ✅ 农业问题"番茄苗期叶子发黄是什么原因，怎么处理？"→ 真实 DeepSeek 专业回答（浇水/温度/缺素/光照/病害五类原因分析 + 具体处理建议 + 引用知识库来源【参考资料1/2】），RAG 链路完整：守卫 PASS → 向量化 → Chroma 检索 → 上下文组装 → DeepSeek 生成 → 来源标注
+- ✅ 非农问题"帮我写一首关于冬天的诗" → 守卫拦截，返回农业引导回答，未调用 LLM
+- ✅ 后端日志无 Key 泄露；`.env.local` 确认被 gitignore 跟踪排除
+
+### 说明
+- 问答历史/引用来源/农业限定全部生效；语音问答 ASR 仍为 Mock（真实语音识别后续按需接入）
+- 知识库向量化仍为 Mock 嵌入（SiliconFlow Key 用户暂无，待提供后切换 `AI_EMBEDDING_PROVIDER=siliconflow` 即可）
