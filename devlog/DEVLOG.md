@@ -2673,3 +2673,29 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 预警配置/数据导出对 OWNER/WORKER 的后端支持与导出修复在 R8 完成
 - 系统监控与管理员数据总览的合并界面在 R3 完成
+
+---
+
+## 步骤64 — R2 地区体系（后端五级聚合 + 前端级联选择器）
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成
+- **背景**：按已确认方案A，地区层级从大棚登记的省/市/县(区)/乡镇/村五级字段聚合，封装为独立地区服务，后续可平滑升级为标准区划表。
+
+### 后端改动
+- `backend/.../repository/GreenhouseRepository.java` — 新增 5 个地区去重查询（findDistinctProvinces/Cities/Districts/Towns/Villages）+ 五级可空地区筛选 findByRegion
+- `backend/.../module/greenhouse/service/RegionService.java`（新增）— 地区聚合独立服务：各层级列表 + 地区范围内棚主用户查询（含大棚数、关键词搜索）
+- `backend/.../module/admin/controller/AdminRegionController.java`（新增）— `/api/v1/admin/regions/provinces|cities|districts|towns|villages|users`，仅 ADMIN
+
+### 前端改动
+- `web/src/api/region.js`（新增）— 地区接口封装
+- `web/src/components/RegionCascader.vue`（新增）— 五级懒加载级联选择器（省→市→县→乡镇→村），R3/R4/R5 复用
+
+### 验证
+- ✅ `mvn compile` 通过（联网阿里云镜像）
+- ✅ 接口实测：河北省 → 石家庄市 → 藁城区（该大棚无乡镇/村，返回空属正常）
+- ✅ 地区用户查询：owner01（1 个大棚）
+- ✅ 后端响应为标准 UTF-8（此前 PowerShell 测试显示乱码为测试端解码问题，实际接口字节正确）
+
+### 说明
+- 地区数据来源于大棚登记字段；新增大棚时地区字段完整性直接影响聚合结果，后续可在录入端加校验
