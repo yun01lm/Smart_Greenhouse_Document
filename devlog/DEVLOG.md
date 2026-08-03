@@ -2810,3 +2810,49 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 地区归属依赖大棚登记字段与 users.owner_id；后续新注册技术员需正确关联棚主，否则无法按地区定位
 - 下一步：R6 知识库修复（分类乱码 + 上传链路 + 向量化）
+
+---
+
+## 步骤68 — R6 知识库修复（分类乱码 + 上传链路 + 向量化完善）
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成
+- **背景**：按需求第 6 条，知识库存在三方面问题：文档分类显示 ？？？？乱码、上传文档不可用、向量化未进行。经勘察定位：分类乱码为历史数据在插入时被编码损坏（category 列存储的是字面 "?" 字符，表字符集本身已是 utf8mb4）；上传链路在后端实测正常，前端 request.js 存在对 FormData 请求的去重缺陷；向量化链路（切片→嵌入→Chroma）代码已具备但种子文件缺失导致从未成功。
+
+### 改动清单
+
+#### 编码修复（防未来乱码）
+- `backend/src/main/resources/application.yml` — 新增 `server.servlet.encoding`（charset=UTF-8 / enabled / force=true），请求与响应统一 UTF-8，修复 multipart 表单字段中文乱码
+- `backend/src/main/resources/application-dev.yml` — `ai.llm.provider` 与 `ai.embedding.provider` 改为环境变量注入（`${AI_LLM_PROVIDER:mock}` / `${AI_EMBEDDING_PROVIDER:mock}`），后续切换真实 AI 无需改代码
+
+#### 上传链路修复
+- `web/src/utils/request.js` — 移除有缺陷的"请求去重"拦截器（原实现对 FormData 请求的 key 恒为 "{}"，且命中重复时返回的是 config 而非响应，会导致上传/重复请求异常），保留 token 注入与 401 刷新逻辑
+- `web/src/api/knowledge.js` — 上传接口超时放宽至 180s（避免真实向量化大文档处理超时）
+- `backend/.../KnowledgeService.java` — `deleteDocument` 增加 `filePath` 空值防护（历史损坏行 file_path 为 NULL 时删除会抛 NPE）
+
+#### 密钥基础设施（真实 AI 前置）
+- `.gitignore` — 新增 `.env.local` / `.env.*.local` 排除规则（密钥绝不入库）
+- 新增本地 `.env.local`（gitignored，含 AI_EMBEDDING_PROVIDER / SILICONFLOW_API_KEY / AI_LLM_PROVIDER / DEEPSEEK_API_KEY 占位）
+- `.env.example` — 补充 AI Provider 开关说明
+- `start_all.bat` — 启动时自动加载 `.env.local` 并注入后端进程环境变量（第 0 步）
+
+#### 种子数据可复现（修复向量化从未成功）
+- 新增 `backend/src/main/resources/knowledge-seed/`（番茄种植技术指南.md / 常见病虫害防治手册.md，随仓库分发）
+- `KnowledgeSeeder` — 改为从 classpath 读取种子内容并写入运行时上传目录，克隆后无需手工放置文件即可重建种子文档并自动向量化
+
+#### 数据修复
+- 删除历史 5 条损坏/测试数据（id 1-5：category 为 "?" 的 2 条 + 验证测试的 3 条），删除时同步清理 Chroma 向量与本地文件
+- 重启后端触发种子重建：id 6（番茄种植技术指南/栽培技术/2块）、id 7（常见病虫害防治手册/病虫害防治/2块），均向量化完成写入 Chroma
+
+### 验证
+- ✅ `mvn compile` 通过
+- ✅ 知识库列表：2 篇文档标题/分类均为正确 UTF-8，vectorIndexed=true、chunkCount=2
+- ✅ DB 字节核验：category 存储为合法 UTF-8（E6A0BDE59FB9E68A80E69CAF=栽培技术）
+- ✅ 上传实测（axios 复现前端）：中文标题+中文分类"水肥管理"完整正确，上传即自动向量化
+- ✅ RAG 问答链路：question=番茄定植密度，从 Chroma 检索到 4 个片段（Mock 回答属预期，真实 LLM 在 R7）
+- ✅ 前端 request.js / knowledge.js / KnowledgePage.vue Vite 编译 200
+
+### 说明与后续
+- 真实向量化（SiliconFlow bge-m3）已就绪：在 `.env.local` 填入 `SILICONFLOW_API_KEY` 并将 `AI_EMBEDDING_PROVIDER=siliconflow` 即可启用（当前 Mock 保证系统可跑通全流程）
+- 当前种子数据由 classpath 资源生成，上传目录为运行时 `backend/uploads/`（已 gitignore）
+- 下一步：R7 AI 问答真实化（DeepSeek + 农业域守卫），同样通过 `.env.local` 注入
