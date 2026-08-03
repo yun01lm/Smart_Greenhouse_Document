@@ -2948,3 +2948,41 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 管理员系统级导出接口 `/api/v1/admin/report` 保留（ADMIN 专用），但前端菜单/路由不再暴露
 - 预警记录列表 `/api/v1/alerts` 的大棚级访问控制属于后端安全加固后续项（当前仅认证即可读，随整体安全整改推进）
 - 下一步：R9 专家工作台（专家在线状态 + 咨询记录查询/导出）
+
+---
+
+## 步骤72 — R9 专家工作台完成（专家在线闭环 + 咨询记录查询/导出）
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成
+- **背景**：R8 完成后执行 R9。目标：专家在线状态自动化（登录置在线、登出/断线置离线）+ 管理员咨询记录查询、明细查看、导出 Excel。中途发现并顺带修复专家侧会话列表返回空的问题。
+
+### 后端改动（backend/src/main/java/com/greenhouse/）
+- `module/auth/service/AuthService.java`：登录成功自动 `setExpertOnline()` 置在线；新增 `logout()` 登出置离线
+- `module/auth/controller/AuthController.java`：新增 `POST /api/v1/auth/logout`
+- `module/websocket/handler/ExpertPresenceListener.java`（新增）：专家 WebSocket 连接/断开自动置在线/离线，与登录/登出形成闭环兜底
+- `repository/ChatConversationRepository.java`：加 `JpaSpecificationExecutor` 支持组合筛选
+- `repository/ChatMessageRepository.java`：加 List 查询/计数/批量计数（补 `List`、`Pageable` 导入）
+- `repository/UserRepository.java`：加 `findByUsernameContaining`（用户关键词筛选）
+- `module/admin/service/AdminExpertService.java`：`listConversations`（Specification 按 expertId/userId/userKeyword/startTime/endTime）、`getConversationMessages`、`exportConversations`（POI Excel）
+- `module/admin/controller/AdminExpertController.java`：新增 `GET /experts/conversations`、`GET /experts/conversations/{id}/messages`、`GET /experts/conversations/export`
+- `module/chat/controller/ChatController.java`：**顺带修复** `getCurrentUserRole()` 未去 `ROLE_` 前缀，导致专家侧 `/api/v1/chat/conversations` 返回空列表 → 改为 `a.getAuthority().replace("ROLE_","")`
+
+### 前端改动（web/src/）
+- `api/expert.js`：新增 `getConversations` / `getConversationMessages` / `exportConversations`（blob + 60s 超时）
+- `views/expert/ExpertPage.vue`：新增"咨询记录"Tab —— 专家/用户关键词/日期筛选、分页、导出按钮；明细抽屉展示对话消息气泡，样式已补充
+
+### 验证（实测）
+- ✅ `mvn compile` 通过（EXIT=0），后端重启成功
+- ✅ expert01 登录 → `GET /api/v1/chat/conversations` 返回对话 #1（角色前缀修复前为空；修复后正常）
+- ✅ 专家会话消息明细 `GET /api/v1/chat/conversations/1/messages` → 3 条消息（owner01 2 条 + expert01 回复 1 条）
+- ✅ 管理员 `GET /api/v1/admin/experts/conversations?page=0&size=10` → 200，返回对话 #1（含专家/用户名/大棚/消息数/最后消息）
+- ✅ 管理员筛选 `userKeyword=owner` → total=1
+- ✅ 管理员消息明细 `/conversations/1/messages` → 200，3 条（含发送方名称）
+- ✅ 管理员导出 `/conversations/export` → xlsx 3908B
+- ✅ 登录限流注意：`RateLimitInterceptor` 登录每分钟 5 次，联调需间隔或用单 token 复用
+
+### 说明
+- 专家在线状态链路：登录置在线 → WebSocket 心跳连接/断开兜底 → 登出置离线，管理员专家列表实时反映
+- 咨询记录导出与筛选走管理员专用接口（ADMIN 角色限定，SecurityConfig 既有规则）
+- 下一步：R10 棚主管理（管理员页面内切换棚主视角，Q3 方案A：一键切回）、R11 语料管理完善
