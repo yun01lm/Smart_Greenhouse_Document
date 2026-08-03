@@ -2647,3 +2647,29 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 新建 `devlog/PLAN-WEB-ADMIN.md`：需求记录 + 现状勘察结论 + 分轮次实施计划（草案）
 - 已通读 Web 端全部页面/API 封装及后端 admin/qa/knowledge/expert/chat/weather/alert 等模块，确认现有基础与断点
 - 待用户确认若干设计问题后批准计划，再开始执行
+
+---
+
+## 步骤63 — R1 登录默认页 + 角色化菜单与路由守卫
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成
+- **背景**：Web 端管理员整改第一轮。按 PLAN-WEB-ADMIN 计划，先完成登录默认页与按角色区分的菜单/路由权限，为后续各角色页面差异打基础。
+
+### 改动清单
+- `web/src/router/index.js` — 所有路由增加 `meta.roles` 角色白名单；路由守卫增加角色校验（角色不符跳回数据总览）；登录后默认跳转 `/dashboard`
+- `web/src/layouts/MainLayout.vue` — 菜单改为按角色动态渲染（MENU_CONFIG）：
+  - ADMIN：数据总览 / 设备管理 / 用户管理 / 知识库 / 语料管理 / 专家工作台 / 棚主管理 / AI问答（不含预警配置、数据导出、系统监控）
+  - OWNER、WORKER：数据总览 / 设备管理 / 预警配置 / 数据导出 / AI问答
+  - EXPERT：数据总览 / AI问答（专家端后续轮次再细化）
+  - 管理员顶部隐藏大棚选择器（管理员按地区查看，R3 提供地区选择器）
+- `web/src/views/Login.vue` — 登录成功后明确跳转 `/dashboard`
+
+### 验证
+- ✅ `node --check` 通过（router / MainLayout script / Login script）
+- ✅ Vite dev server 编译 `/src/router/index.js`、`/src/layouts/MainLayout.vue` 均返回 200
+- ✅ 角色权限与后端 `/api/v1/admin/**`（仅 ADMIN）口径一致，前端先隐藏、后端仍强制校验
+
+### 说明
+- 预警配置/数据导出对 OWNER/WORKER 的后端支持与导出修复在 R8 完成
+- 系统监控与管理员数据总览的合并界面在 R3 完成
