@@ -2915,3 +2915,36 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 问答历史/引用来源/农业限定全部生效；语音问答 ASR 仍为 Mock（真实语音识别后续按需接入）
 - 知识库向量化仍为 Mock 嵌入（SiliconFlow Key 用户暂无，待提供后切换 `AI_EMBEDDING_PROVIDER=siliconflow` 即可）
+
+---
+
+## 步骤71 — R8 菜单与权限收口 + 数据导出修复（预警配置/导出仅 OWNER/WORKER）
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成
+- **背景**：R7 完成后，R8 收口「预警配置」「数据导出」的角色权限并修复导出不可用问题。勘察发现：前端菜单/路由已在 R1 限定，但前端 API 仍指向 ADMIN 专用接口（alert-rule.js → /admin/alerts、report.js → /admin/report），OWNER/WORKER 实际会被 403；且 request.js 响应拦截器对 Blob 响应误判（res.code 为 undefined 恒不相等），导致导出下载失败。
+
+### 后端改动
+- 新增 `module/report/controller/ReportController.java`：`/api/v1/report/**` 4 个导出端点（sensors/alerts/controls/health），Excel 生成复用 AdminReportService
+- 新增 `module/report/service/ReportAccessService.java`：大棚归属校验（OWNER 仅本人大棚；WORKER 仅被授权大棚；ADMIN/EXPERT 拒绝）
+- `SecurityConfig`：`/api/v1/report/**` 限定 `hasAnyRole(OWNER, WORKER)`
+- 预警规则权限收口：`AlertRuleService.listRulesForUser(userId, greenhouseId)` —— greenhouseId 缺省时返回用户全部可见大棚的规则；显式传参时校验归属；`AlertController.listRules` 改为可选参 + 当前用户
+- `AlertRuleRepository` 新增 `findByGreenhouseIdIn`
+
+### 前端改动
+- `web/src/api/report.js`：BASE `/admin/report → /report`；导出请求超时 15s → 60s
+- `web/src/api/alert-rule.js`：BASE `/admin/alerts → /alerts`（用户侧预警配置接口）
+- `web/src/utils/request.js`：响应拦截器增加 Blob 分支（responseType==='blob' 直接返回二进制，不做业务码判断）
+
+### 验证（实测）
+- ✅ `mvn compile` 通过
+- ✅ owner01：`GET /api/v1/alerts/rules`（无参/带参）→ 200 返回本人大棚规则
+- ✅ owner01：`GET /api/v1/report/sensors?greenhouseId=1&sensorType=TEMP` → 200，3595B，xlsx 魔数 PK
+- ✅ admin：`GET /api/v1/report/sensors` → 403（被 SecurityConfig 拦截）
+- ✅ worker01（临时授权 greenhouse 1）：`/alerts/rules` → 200 可见规则；`/report/sensors` → 200 可导出；未授权大棚 → 403/400 拒绝；测试后已删除临时授权记录（employee_permissions 恢复为空）
+- ✅ Web 3000 运行中，Vite 热更新已加载新模块
+
+### 说明
+- 管理员系统级导出接口 `/api/v1/admin/report` 保留（ADMIN 专用），但前端菜单/路由不再暴露
+- 预警记录列表 `/api/v1/alerts` 的大棚级访问控制属于后端安全加固后续项（当前仅认证即可读，随整体安全整改推进）
+- 下一步：R9 专家工作台（专家在线状态 + 咨询记录查询/导出）

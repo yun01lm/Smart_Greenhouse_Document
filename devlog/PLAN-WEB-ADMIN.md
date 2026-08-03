@@ -157,3 +157,4 @@ author: AI助手
 - 2026-08-04：R6 知识库修复完成（分类乱码：UTF-8强制+数据重建；上传链路：去重拦截器修复+超时放宽；向量化：种子可复现+全链路验证；密钥基础设施 .env.local）→ 步骤68
 - 2026-08-04：R7 AI 问答真实化准备 + 农业域守卫完成（三层关键词预检+提示词强化+被拒审计；真实 DeepSeek 待用户 Key 激活）→ 步骤69
 - 2026-08-04：R7 真实 DeepSeek 激活验证完成（用户填 Key + AI_LLM_PROVIDER=deepseek；农业问题真实回答并引用知识库，非农问题守卫拦截）→ 步骤70
+- 2026-08-04：R8 菜单与权限收口 + 导出修复完成（预警配置/数据导出仅 OWNER/WORKER；新增 /api/v1/report 导出接口 + ReportAccessService 大棚归属校验；预警规则按用户可见范围收口；前端 report/alert-rule 改路径；request.js 增加 Blob 兼容；owner/worker/admin 三类实测通过）→ 步骤71
