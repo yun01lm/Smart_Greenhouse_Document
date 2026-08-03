@@ -2699,3 +2699,34 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 
 ### 说明
 - 地区数据来源于大棚登记字段；新增大棚时地区字段完整性直接影响聚合结果，后续可在录入端加校验
+
+---
+
+## 步骤65 — R3 管理员数据总览（含系统监控合并）
+
+- **操作时间**：2026-08-04
+- **状态**：✅ 完成
+- **背景**：按需求第 2、9 条，管理员数据总览改为"按地区查看的聚合总览"，并把原"系统监控"页面合并进总览；农户/员工/专家保留原按大棚的数据总览。
+
+### 后端改动
+- `backend/.../repository/DeviceRepository.java` — 新增按大棚ID集合统计设备（findByGreenhouseIdIn / countByGreenhouseIdIn / countByGreenhouseIdInAndStatus）
+- `backend/.../repository/AlertRepository.java` — 新增按大棚ID集合查询/统计预警（含级别）
+- `backend/.../module/admin/service/AdminDashboardService.java`（新增）— 地区总览聚合：整体统计（大棚数/农户在线/设备在线，设备在线=ONLINE+ALARM）、环境聚合（各大棚最新值求平均）、预警总览（总数+严重/警告/提示）、地区健康评分（100-加权扣分，严重8/警告3/提示1，规则后续可细化）、最新预警 8 条、当前天气（取最深一级地区名）、系统监控（复用 AdminMonitorService）
+- `backend/.../module/admin/controller/AdminDashboardController.java`（新增）— `GET /api/v1/admin/dashboard/overview?province=&city=&district=&town=&village=`
+- `backend/.../module/weather/controller/WeatherController.java` — `/weather/current` 支持 `greenhouseId` 参数（未传 location 时按大棚登记城市查询），修复农户端天气始终查"北京"的问题
+
+### 前端改动
+- `web/src/api/dashboard.js`（新增）— 管理员总览接口封装
+- `web/src/views/dashboard/AdminDashboard.vue`（新增）— 管理员总览页：地区级联选择（复用 RegionCascader）+ 统计卡片 + 环境聚合 + 预警总览 + 最新预警表 + 当前天气 + 系统运行状态（设备在线率/服务状态/系统概览）
+- `web/src/views/dashboard/DashboardPage.vue` — 按角色分支：管理员渲染 AdminDashboard，其余角色保留原页面
+- `web/src/api/weather.js` — 支持 location / greenhouseId 两种传参
+
+### 验证
+- ✅ `mvn compile` 通过
+- ✅ 接口实测（admin/123456）：统计=1 大棚/1 农户在线/8 设备在线；环境=温度 23.5℃/湿度 67.1%/光照 25981 lx/CO2 650.7ppm；健康评分 100 优；监控 MQTT/数据库正常
+- ✅ 按地区筛选（河北省）范围统计正常
+- ✅ Vite 编译全部模块 200
+
+### 说明
+- 地区健康评分规则为初版（严重8/警告3/提示1 加权扣分），后续可按业务细化
+- 管理员总览的天气当前为 Mock 数据源，接入和风天气后自动生效（按所选地区城市查询）
