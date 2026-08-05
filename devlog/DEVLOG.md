@@ -3059,3 +3059,42 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 棚主视角为前端视角 + 后端代查组合：不改变登录身份与 JWT，仅 ADMIN 可代查，安全边界在后端强制
 - 棚主无大棚时禁止进入管理（前端提示）；技术员(WORKER)不属于棚主视角范围（按棚主管理语义）
 - 下一步：R11 语料管理完善（上传/列表核实修复、用途标注）
+
+## 步骤75 — R11 语料管理完善（上传链路修复 + 音频播放 + 配置对齐）
+
+- **操作时间**：2026-08-05
+- **状态**：✅ 完成
+- **背景**：R10 完成后执行 R11。目标（问题 10）：语料管理此前疑似不可用，需核实并修复上传/列表链路、标注用途说明、支持在线播放。
+
+### 问题定位（勘察阶段）
+- 后端功能已具备：AdminCorpusController（列表分页/方言筛选/关键词搜索/上传/删除/方言类型去重）+ AdminCorpusService + DialectCorpus 实体/仓库，数据库 dialect_corpus 表存在但 0 条数据
+- 发现 3 个缺陷：
+  1. 配置键不匹配：代码读 `greenhouse.upload.path`（默认 uploads），yml 只有 `file.upload-dir`，实际走默认值
+  2. multipart 限制冲突：yml `spring.servlet.multipart.max-file-size: 10MB`，服务内校验 30MB，>10MB 的音频直接被 Spring 拦截
+  3. 上传实际不可用（根因）：`MultipartFile.transferTo` 对相对路径按 Tomcat 工作目录解析（`...Temp\tomcat.8080...\ROOT\.\uploads\...`），保存抛 FileNotFoundException —— 这就是"上传不能使用"的直接原因
+
+### 改动清单
+后端（backend/src/main/）：
+- `resources/application-dev.yml`：multipart max-file-size 10MB→30MB、max-request-size 10MB→35MB；`file.max-file-size` 同步 30MB；新增 `greenhouse.upload.path: ./uploads`（合并进已有 greenhouse 节，与 file.upload-dir 对齐）
+- `module/admin/service/AdminCorpusService.java`：上传目录改为绝对路径 `Paths.get(uploadRoot).toAbsolutePath().resolve("corpus").resolve(dateDir)`（修复 transferTo 相对路径失败）；新增 `resolveAudioPath(id)`（校验记录与文件存在，供播放/下载）
+- `module/admin/controller/AdminCorpusController.java`：新增 `GET /api/v1/admin/corpus/{id}/audio` 音频流式播放端点（inline 响应头 + 自动探测 Content-Type）
+- `module/admin/dto/DialectCorpusResponse.java`：新增 `audioUrl` 字段（`/api/v1/admin/corpus/{id}/audio`）
+
+前端（web/src/）：
+- `api/corpus.js`：新增 `getCorpusAudio(id)`（axios blob 拉取，audio 标签不携带 JWT 故不能直连）
+- `views/corpus/CorpusPage.vue`：页面顶部用途说明横幅（语料用于方言识别模型微调训练）；表格音频列增加播放器（点击播放懒加载 blob，onUnmounted 回收 ObjectURL）；上传方言下拉由静态 6 项改为静态+后端动态合并；上传前客户端 30MB 大小校验
+
+### 验证（实测）
+- ✅ `mvn compile` EXIT=0，后端重启加载新代码（8080）
+- ✅ 上传：16KB 测试 WAV → 200"语料上传成功"，DB 落库 id=1，audioUrl 正确
+- ✅ 列表：total=1，记录可见且带 audioUrl
+- ✅ 音频流：GET /{id}/audio → 200，content-type audio/wav，字节与源文件一致
+- ✅ 删除：200，列表不再显示，磁盘 uploads/corpus 目录已清空
+- ✅ 前端：CorpusPage.vue / corpus.js 经 Vite 编译 200 无错误
+- ✅ 方言接口正常（空库返回空数组，前端静态选项兜底）
+
+### 说明
+- 语料用途：方言识别模型微调训练，页面已标注；请上传清晰的方言音频并填写标准转写与方言原文
+- 上传路径统一为 `uploads/corpus/yyyy/MM/dd/`（相对 backend 模块工作目录），音频绝对路径落库
+- 后续可选：批量上传、音频波形可视化、标注质量审核流程
+- 下一步：统一推送（全部轮次完成后由用户确认执行）
