@@ -2986,3 +2986,34 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 专家在线状态链路：登录置在线 → WebSocket 心跳连接/断开兜底 → 登出置离线，管理员专家列表实时反映
 - 咨询记录导出与筛选走管理员专用接口（ADMIN 角色限定，SecurityConfig 既有规则）
 - 下一步：R10 棚主管理（管理员页面内切换棚主视角，Q3 方案A：一键切回）、R11 语料管理完善
+---
+
+## 步骤73 — 一键启动脚本修复（Web 断联问题 + 中文乱码 + 日志落盘）
+
+- **操作时间**：2026-08-05
+- **状态**：✅ 完成
+- **背景**：用户电脑重启后运行 `start_all.bat`，约两分钟后 Web 端断联。检查发现：① 脚本用 `start cmd /k` 启动服务，窗口关闭即杀服务进程；② Vite 只绑定 IPv6 `::1`，对 IPv4 访问不友好；③ bat 为 UTF-8 编码但在 chcp 936(GBK) 下解析导致中文全部乱码；④ 后端 Maven 启动命令缺少 cmd 结尾闭合引号，cmd 解析失败立即退出且日志文件不生成。
+
+### 根因定位
+- 环境实测：`node_modules` 正常、Node v24.15.0、Maven/Python 均可执行；Docker 4 容器（mysql/mosquitto/influxdb/chroma）运行正常
+- 复现实验确认：后端命令 `cmd /c ""mvn.cmd" spring-boot:run ... 2>&1"`（带结尾引号）→ 成功但日志空；`cmd /c "..."` 引号包裹不完整 → cmd 立即退出；**无引号形式（路径无空格）`cmd /c F:\...\mvn.cmd ... > log 2>&1` → 启动成功且日志正常写入（70852B）**
+- 模拟器此前用 cmd 包装启动，PID 记录为 cmd 而非 python，且输出块缓冲导致日志为空；统一改为 cmd 无引号形式 + `python -u` 无缓冲
+
+### 改动清单
+- `start_all.bat`（重写）：改为调用 `start_all.ps1`；GBK 编码保存，chcp 936 下中文正常显示
+- `start_all.ps1`（新增）：完整启动编排 —— 加载 `.env.local` 注入 Key → 环境检查（Maven/npm/Python）→ Docker 检查 → 中间件容器检查（缺失自动 `docker compose up -d`）→ 后端（cmd 无引号+重定向 `logs\backend.log`）→ Web（Vite 3000）→ 模拟器（python -u + 重定向 `logs\simulator.log`）→ 端口就绪轮询（后端最长 300 秒、Web 最长 60 秒）→ HTTP 存活检查 → 自动打开浏览器；PID 记录到 `logs\*.pid`，重复运行自动跳过已在运行的服务
+- `stop_all.bat` / `stop_all.ps1`（新增）：按端口 8080/3000 及 python device_simulator 特征停止服务，Docker 容器保留
+- `web/vite.config.js`：`server.host: '127.0.0.1'` + `strictPort: true` —— 消除 IPv6 依赖，端口占用直接报错不静默换端口
+
+### 验证（最终版脚本全链路）
+- ✅ 后端：java 监听 0.0.0.0:8080，`logs\backend.log` 正常写入（Maven 构建日志 + Spring Boot 运行日志）
+- ✅ Web：node 监听 127.0.0.1:3000，`logs\web.log` 显示 `VITE v6.4.3 ready`；页面 HTTP 200
+- ✅ 模拟器：python 连接 MQTT 成功（`[MQTT] 已连接到 localhost:1883`），后端持续收到传感器数据（TEMPERATURE/HUMIDITY/LIGHT/CO2/土壤温湿度 + 控制器心跳）
+- ✅ API：owner01 登录 200（role=OWNER）；admin 登录 200（role=ADMIN）
+- ✅ 一键脚本 20 秒内完成启动与就绪检查，并自动打开 `http://127.0.0.1:3000`
+
+### 说明
+- 服务进程与窗口生命周期解耦：后台启动、日志落盘，关闭脚本窗口不影响服务；停止用 `stop_all.bat`
+- 浏览器若因缓存访问 `localhost:3000` 异常，改用 `http://127.0.0.1:3000`（脚本已打开此地址）
+- 测试期间产生的临时文件（F:\Smart_project\test_*.log、backend_run*.log 等）为排查遗留，可清理
+- 下一步：R10 棚主管理（管理员页面内切换棚主视角，Q3 方案A）、R11 语料管理完善
