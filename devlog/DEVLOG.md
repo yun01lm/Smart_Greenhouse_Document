@@ -3017,3 +3017,45 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 浏览器若因缓存访问 `localhost:3000` 异常，改用 `http://127.0.0.1:3000`（脚本已打开此地址）
 - 测试期间产生的临时文件（F:\Smart_project\test_*.log、backend_run*.log 等）为排查遗留，可清理
 - 下一步：R10 棚主管理（管理员页面内切换棚主视角，Q3 方案A）、R11 语料管理完善
+---
+
+## 步骤74 — R10 棚主管理完成（搜索/地区筛选 + 进入棚主视角一键切回）
+
+- **操作时间**：2026-08-05
+- **状态**：✅ 完成
+- **背景**：R9 完成后执行 R10。目标（问题12 + Q3 方案A）：棚主列表增加搜索与地区筛选；管理员可"进入管理"以棚主视角查看其名下数据总览/设备/预警配置/数据导出，并一键切回管理员视角。
+
+### 方案（Q3 方案A：页面内切换）
+- 前端 `stores/viewMode.js` 维护棚主视角状态（active/ownerId/ownerName/greenhouses/greenhouseId）
+- 进入管理：加载棚主大棚 → 设置视角状态 → 跳转数据总览；顶部显示"棚主视角 + 返回管理员"；菜单切换为棚主菜单、大棚选择器显示该棚主大棚
+- 路由守卫与 Dashboard/Device 的 isAdmin 判断联动：视角模式下有效角色视为 OWNER、按棚主版页面展示
+- 后端关键接口支持 ADMIN 携带 `ownerId` 代查（非 ADMIN 携带一律拒绝，防越权）
+
+### 后端改动（backend/src/main/java/com/greenhouse/）
+- `module/admin/controller/AdminOwnerController.java`：棚主列表支持 `keyword`（用户名/姓名/手机号模糊）+ 五级地区筛选（province/city/district/town/village，任一棚命中即算）+ 分页 + 新增 `regionText` 地区列
+- `module/alert/controller/AlertController.java`：预警规则/自定义阈值全部接口增加可选 `ownerId` 参数，新增 `resolveUserId(ownerId)`——仅 ADMIN 可代查且目标必须为 OWNER，非 ADMIN 携带拒绝（实测 worker01 返回 400）
+- `module/report/service/ReportAccessService.java`：新增 `assertExportAccess(userId, greenhouseId, ownerId)` 重载——ADMIN+ownerId 校验（ownerId 为 OWNER 且大棚归属），否则走原 OWNER/WORKER 归属校验
+- `module/report/controller/ReportController.java`：4 个导出端点增加可选 `ownerId`
+- `config/SecurityConfig.java`：`/api/v1/report/**` 由 `hasAnyRole(OWNER,WORKER)` 调整为 `authenticated()`（细粒度校验仍在 ReportAccessService，ADMIN 仅可代查 OWNER 名下大棚）
+
+### 前端改动（web/src/）
+- `stores/viewMode.js`（新增）：棚主视角状态 + `effectiveRole`（视角模式下为 OWNER）
+- `layouts/MainLayout.vue`：视角模式横幅（"正在以「XX」身份查看"+ 返回管理员按钮）、菜单切换为棚主菜单、大棚选择器显示棚主大棚、greenhouseId 联动
+- `router/index.js`：路由守卫在视角模式下放行 OWNER 页面
+- `views/owner/OwnerPage.vue`：关键词搜索 + RegionCascader 五级地区筛选 + 分页 + "进入管理"按钮（进入前校验棚主有大棚）
+- `views/dashboard/DashboardPage.vue`、`views/devices/DevicePage.vue`：`isAdmin` 增加 `&& !viewStore.active`，视角模式下展示棚主版页面
+- `views/alerts/AlertRulePage.vue`、`views/export/ReportPage.vue`：视角模式下大棚列表取该棚主大棚
+- `api/owner.js`：`getOwners` 支持筛选参数；`api/alert-rule.js`、`api/report.js`：请求自动附加 `ownerId`（视角模式下）
+
+### 验证（实测）
+- ✅ `mvn compile` 通过（EXIT=0），后端重启正常
+- ✅ 棚主列表：默认 2 个棚主（owner01 含 regionText"河北省 / 石家庄市 / 藁城区"）；`keyword=owner` → 1 条；`province=河北省` → 1 条
+- ✅ admin 代查：`/alerts/rules?greenhouseId=1&ownerId=2` → 200 返回 2 条规则；`/report/sensors?greenhouseId=1&sensorType=TEMPERATURE&ownerId=2` → 200，xlsx 8621B
+- ✅ 权限边界：worker01 携带 `ownerId` 查规则/导出 → 400 拒绝（防越权）
+- ✅ 前端：Vite 热更新无编译错误，新增/改动 11 个模块经 Vite dev 即时编译全部 200；数据总览/设备/预警配置/导出页在视角模式按棚主大棚展示
+- ✅ 运行中服务：后端 8080、Web 3000、模拟器 MQTT 数据流均正常
+
+### 说明
+- 棚主视角为前端视角 + 后端代查组合：不改变登录身份与 JWT，仅 ADMIN 可代查，安全边界在后端强制
+- 棚主无大棚时禁止进入管理（前端提示）；技术员(WORKER)不属于棚主视角范围（按棚主管理语义）
+- 下一步：R11 语料管理完善（上传/列表核实修复、用途标注）
