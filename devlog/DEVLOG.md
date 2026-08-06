@@ -3171,3 +3171,43 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - **建议**：知识库用于 AI 问答检索，推荐上传农业相关的 .md/.txt 小文档（几 KB ~ 数百 KB）；几 MB 的小说类文件会快速消耗 SiliconFlow 免费额度（TPM 限流），且对农业问答检索无价值
 - 若需要批量向量化大文件，可考虑提升 SiliconFlow 付费额度或接入其他 Embedding 服务（架构上仅需新增 Provider 实现）
 - 待确认：是否推送本轮提交到 GitHub
+
+## 步骤78 — 知识库文档标记信息编辑功能（编号/标题/分类/简介 + 向量库元数据同步）
+
+- **操作时间**：2026-08-06
+- **状态**：✅ 完成
+- **背景**：用户要求为知识库管理增加"编辑"能力，可修改文档的 ID、标题、分类及文档内容简介等标记信息。
+
+### 设计决策
+- **关于"更改文档 ID"**：数据库 `knowledge_documents.id` 为自增主键，被向量库（Chroma）文本块标识（`doc_{id}_chunk_{i}`）、元数据（`doc_id`）、接口路径等引用，直接改主键会导致向量数据错乱并引发后续自增冲突。因此采用：**新增可编辑"文档编号"（doc_no）业务字段**（唯一约束，默认 `DOC-0001` 格式，可自由修改），列表中原"ID"列改显示该编号；系统主键 id 保留只读（编辑框可见）。
+- 同时新增"简介"（description TEXT）字段，并同步写入 Chroma 元数据，保证 AI 问答引用来源的标题/分类/简介与列表一致。
+
+### 改动清单
+后端（backend/src/main/java/com/greenhouse/）：
+- `entity/KnowledgeDocument.java`：新增 `docNo`（doc_no，varchar(64) 唯一）、`description`（description，TEXT）
+- `repository/KnowledgeDocumentRepository.java`：新增 `existsByDocNoAndIdNot`（编号唯一性校验）、`findByDocNo`
+- `dto/KnowledgeDocumentResponse.java`：响应新增 docNo/description；新增 `dto/KnowledgeUpdateRequest.java`（编号/标题/分类/简介）
+- `module/knowledge/service/KnowledgeService.java`：
+  - 新增 `updateDocument(id, request)`：编号唯一性校验（排除自身）、标题非空且≤200、分类≤100、简介≤2000；空编号自动回退默认编号
+  - 新增 `updateChromaMetadata(doc)`：Chroma v2 /update 按 `doc_{id}_chunk_{0..N}` 精确更新全部切片元数据（失败仅告警不阻塞保存）
+  - 上传/种子文档保存后自动生成默认编号（`DOC-` + 4 位补零 id）
+- `module/knowledge/controller/KnowledgeController.java`：新增 `PUT /api/v1/knowledge/documents/{id}`
+- 数据库：`ddl-auto=update` 自动新增两列；历史文档回填编号（`UPDATE ... SET doc_no = CONCAT('DOC-', LPAD(id,4,'0'))`）
+
+前端（web/src/）：
+- `api/knowledge.js`：新增 `updateDocument(id, data)`（PUT）
+- `views/knowledge/KnowledgePage.vue`：列表"ID"列改为"编号"（docNo）、新增"简介"列（超长省略+悬浮提示）、操作列新增"编辑"按钮与编辑对话框（系统ID只读 / 编号 / 标题 / 分类可自定义输入 / 简介多行）
+
+### 验证（实测）
+- ✅ 编译：mvn compile 通过；Vite 热更新成功、模块编译 200
+- ✅ 列表接口返回 docNo（DOC-0006/0007/0014/0015）
+- ✅ PUT 编辑文档14（已向量化）：编号 TEST-014 + 新标题 + 简介 → HTTP 200；MySQL 行更新；Chroma 元数据同步成功（title/category/description 均更新，中文正常）
+- ✅ 唯一性校验：重复编号 → 400 "文档编号已被占用"
+- ✅ 参数校验：空标题 → 400 "文档标题不能为空"；不存在文档 → 400 "文档不存在"
+- ✅ 二次编辑恢复原状：编号/标题/简介正确回写（含 Chroma 同步）
+
+### 说明
+- 编辑仅影响元数据（编号/标题/分类/简介），文件内容与向量本身不变
+- 未向量化文档编辑不触发 Chroma 调用；已向量化文档编辑后自动同步元数据，问答引用来源即时更新
+- 编号为空时后端自动回退为默认编号（DOC-xxxx），不会产生空编号
+- 待确认：是否推送本轮提交到 GitHub
