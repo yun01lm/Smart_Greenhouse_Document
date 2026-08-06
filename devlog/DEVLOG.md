@@ -3262,3 +3262,29 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 分类删除保护：分类下仍有文档（docCount>0）时禁止删除，防止文档分类悬挂
 - 分类重命名级联：同步更新 knowledge_documents.category 与 Chroma 全部切片元数据
 - 待确认：是否推送本轮提交到 GitHub
+## 步骤80 — 数据总览（管理员）视觉美化：浅色统一风格
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户反馈数据总览页面内容正确但设计不美观。经排查，管理员数据总览（AdminDashboard.vue）原为"深蓝渐变背景 + 白色 el-card"，与整个管理后台（浅灰背景 #f0f2f5 + 白卡片）风格割裂，是视觉不协调的主因。用户批准方案：仅改视觉、不动任何数据与业务逻辑，改为浅色统一风格。
+
+### 改动清单
+前端（web/src/views/dashboard/AdminDashboard.vue，仅 template 结构装饰 + style）：
+- 页面背景：深蓝渐变 → 浅灰渐变（#f3f6fb → #e9eef6），与 layout-main 融合
+- 统计卡片升级：4 张卡片改为"彩色图标圆底 + 数值 + 标签"布局（大棚=蓝 OfficeBuilding / 农户在线=绿 User / 设备在线=橙 Cpu / 健康评分=按分数动态配色 Star），数值 28px 加粗、hover 上浮
+- 区块头部统一：图标 + 标题 + 右侧补充说明（如"最新值平均 / 累计 / 地区内全部农户"），卡片圆角 12px + 柔和阴影、统一边框
+- 地区选择卡：左侧"查看范围"标题 + 级联选择器，右侧当前范围标签 + 查询/全部地区按钮
+- 环境聚合：4 项改为内衬浅色块（#f7f9fc 圆角）网格排布
+- 预警总览：左侧大数字（44px）+ 右侧严重/警告/提示改为胶囊计数徽章
+- 天气卡片：卡片体浅蓝渐变底 + 橙色太阳图标圆底 + 大温度（42px），湿度/风速加图标
+- 系统监控：三个模块块（设备在线率 / 服务连接状态 / 系统数据概览）改为浅色内衬圆角块；进度条渐变圆角；服务状态用状态点 + el-tag 标签
+- 图标新增 import：Location / MapLocation / OfficeBuilding / User / Cpu / Star / Sunny / Pouring / WindPower / TrendCharts / Connection / Coin（均来自 @element-plus/icons-vue）
+
+### 验证（实测）
+- ✅ Vite 编译通过（模块请求 200，日志 hmr update 无报错）
+- ✅ Playwright 无头 Edge 登录 admin/123456 截取数据总览全页：卡片/图标/徽章/渐变均正常渲染，无控制台错误
+- ✅ 数据链路未改动：统计/环境/预警/天气/监控数据来源与展示逻辑与修改前一致
+
+### 说明
+- 本次仅美化管理员数据总览；农户端深色大屏数据总览（SensorCards/TrendChart 等）不在本次范围
+- 待确认：是否推送本轮提交到 GitHub
