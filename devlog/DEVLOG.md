@@ -3211,3 +3211,54 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 未向量化文档编辑不触发 Chroma 调用；已向量化文档编辑后自动同步元数据，问答引用来源即时更新
 - 编号为空时后端自动回退为默认编号（DOC-xxxx），不会产生空编号
 - 待确认：是否推送本轮提交到 GitHub
+## 步骤79 — 知识库分类管理（方案B）+ ID 复用回收池（方案A）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户提出知识库分类需正式管理（可新建/编辑/删除分类），同时此前删除文档后自增 ID 不回落、出现空洞，希望新增文档优先复用已删除的 ID。经讨论确认：
+  - **分类（方案B）**：正式分类管理表 + CRUD 接口 + 前端管理弹窗；分类重命名时级联更新该分类下全部文档与 Chroma 元数据；分类下仍有文档时禁止删除（防止悬挂分类）。
+  - **ID 复用（方案A）**：删除文档时 ID 进回收池；新增文档优先复用回收池中最小 ID，池空时取计数器（当前 next_id=16）；并发分配用 `SELECT ... FOR UPDATE` 保证不重复。
+
+### 改动清单
+后端（backend/src/main/java/com/greenhouse/）：
+- `entity/KnowledgeCategory.java`（新建）：分类实体（id/name 唯一/description/docCount 冗余/时间戳）
+- `repository/KnowledgeCategoryRepository.java`（新建）
+- `module/knowledge/dto/KnowledgeCategoryRequest.java`、`KnowledgeCategoryResponse.java`（新建）
+- `module/knowledge/service/KnowledgeCategoryService.java`（新建）：分类 CRUD + 重命名级联（文档表 + Chroma 同步）+ 删除保护（docCount>0 拒绝）
+- `module/knowledge/controller/KnowledgeCategoryController.java`（新建）：`/api/v1/knowledge/categories/managed` GET/POST/PUT/DELETE
+- `entity/KnowledgeDocument.java`：去掉 `@GeneratedValue(IDENTITY)`，ID 改为服务层显式分配（配合回收池）
+- `module/knowledge/service/KnowledgeService.java`：
+  - `allocateDocumentId()`：回收池最小 ID 优先，池空取计数器（`SELECT ... FOR UPDATE` 并发安全）
+  - `ensureCategoryRegistered()`：上传/编辑时新分类自动登记（兜底不阻塞）
+  - `renameDocumentCategory()`：分类重命名级联更新文档 + Chroma
+  - 删除文档：ID 入回收池；复用 ID 前 `deleteFromChroma` 防御清理旧向量
+  - `indexDocument`：统一先清旧向量再写入（幂等）
+- `module/knowledge/service/KnowledgeSeeder.java`：种子文档 ID 走统一分配器
+
+前端（web/src/）：
+- `api/knowledge.js`：新增分类管理 4 个接口（列表/新建/编辑/删除）
+- `views/knowledge/KnowledgePage.vue`：新增"分类管理"按钮 + 弹窗（列表/新增/编辑/删除，显示 docCount，删除有文档分类时禁用）；上传对话框分类下拉改为动态分类 + 可输入新分类（allow-create）
+
+数据库：
+- `knowledge_categories`：由 ddl-auto 自动建表；回填分类（id 1 栽培技术 / 2 病虫害防治 / 10 水肥管理 / 11 品种选择 / 12 土壤管理 / 13 其他）；测试遗留"自动登记测试"分类（0 文档）保留；修复分类表零日期（时间戳补 NOW()）
+- `knowledge_document_id_recycle`（手动建）：recycled_id 主键 + created_at
+- `knowledge_document_id_seq`（手动建）：next_id=16（当前最大文档 ID 之后）
+
+### 验证（实测）
+- ✅ 编译通过（mvn compile）；后端重启运行 8080；Web 热更新模块 200
+- ✅ 分类 CRUD：新建"育苗技术"→ 重命名"育苗技术-修订"→ 删除（0 文档）成功
+- ✅ 删除保护：分类"自动登记测试"下有文档时删除 → 400 拒绝
+- ✅ 自动登记：上传新分类"自动登记测试"文档后，分类列表自动出现该分类
+- ✅ ID 复用：删除测试文档（id=16）→ 再次上传 → 复用 id=16 成功
+- ✅ 级联重命名：栽培技术 ↔ 级联测试，docs=2、vectorSynced=2（Chroma 同步成功）
+- ✅ docNo 默认编号自动生成（DOC-0016）
+
+### 历史数据一致性修复（非 R13 引入）
+- 发现 doc 6（番茄种植技术指南）在 MySQL 与 Chroma 中分类均为"病虫害防治"，与种子定义"栽培技术"不符。依据：R6 重建日志记录 doc6=栽培技术（HEX 核验 E6A0BD...）；R13 级联重命名仅匹配到 14/15 两个"栽培技术"文档，证明 doc6 分类早于 R13 已被改脏（历史手工/数据操作所致）。
+- 处理：通过 R12 编辑接口 `PUT /api/v1/knowledge/documents/6` 将分类修正为"栽培技术"，DB 与 Chroma 全部切片元数据同步（HEX 核验 E6A0BDE59FB9E68A80E69CAF=栽培技术）。
+
+### 说明
+- ID 复用策略：删除文档 → ID 入回收池 → 新增优先复用最小 ID；并发下 `SELECT ... FOR UPDATE` 保证不重复分配
+- 分类删除保护：分类下仍有文档（docCount>0）时禁止删除，防止文档分类悬挂
+- 分类重命名级联：同步更新 knowledge_documents.category 与 Chroma 全部切片元数据
+- 待确认：是否推送本轮提交到 GitHub

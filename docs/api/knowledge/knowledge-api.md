@@ -235,3 +235,34 @@ Content-Type: application/json
 - `knowledge_documents` 表新增列：`doc_no`（varchar(64)，唯一）、`description`（TEXT）
 - 历史文档已回填默认编号（`DOC-` + 4 位补零 id，如 DOC-0001）
 - 上传/种子文档自动生成默认编号，用户可在编辑中修改
+---
+
+## 变更记录（追加，2026-08-07 · 步骤79：分类管理 + ID 复用）
+
+### 分类管理（方案B）
+#### `GET /api/v1/knowledge/categories/managed`（分类管理列表）
+- 返回全部正式分类：`id / name / description / docCount`（该分类下文档数）
+#### `POST /api/v1/knowledge/categories/managed`（新建分类）
+- 请求体：`{"name":"育苗技术","description":"..."}`；`name` 唯一（重复 → 400 参数错误）
+#### `PUT /api/v1/knowledge/categories/managed/{id}`（编辑分类）
+- 请求体：`{"name":"新名称","description":"..."}`
+- **重命名级联**：自动更新该分类下全部文档（knowledge_documents.category）与 Chroma 全部切片元数据，保证 AI 问答检索与来源标注一致
+#### `DELETE /api/v1/knowledge/categories/managed/{id}`（删除分类）
+- 分类下有文档（docCount>0）时拒绝删除（400"该分类下仍有文档，无法删除"），防止文档分类悬挂
+- 兜底机制：上传/编辑文档时使用未登记的新分类会自动登记（ensureCategoryRegistered），不阻塞上传
+
+### ID 复用（方案A）
+- **背景**：knowledge_documents.id 原为自增主键，删除后不回落、ID 出现空洞；需求为新增优先复用已删除 ID
+- **实现**：
+  - 删除文档：ID 写入 `knowledge_document_id_recycle(recycled_id)` 回收池
+  - 新增文档：`allocateDocumentId()` 先取回收池最小 ID（`SELECT ... FOR UPDATE LIMIT 1`），池空则读取 `knowledge_document_id_seq.next_id` 并 +1
+  - 并发安全：分配在事务内用行锁（FOR UPDATE），同一时刻不会分配重复 ID
+- **行为变化**：文档 ID 不再严格按时间单调递增；删除后新建可能复用旧 ID（如删除 16 后再上传仍为 16）
+- **Chroma 防御**：复用 ID 前先 `deleteFromChroma` 清理可能残留的旧向量，再写入新文档向量
+- 种子文档/上传文档 ID 均走统一分配器，行为一致
+
+### 数据库变更
+- 新增表 `knowledge_categories`（id / name 唯一 / description / doc_count / created_at / updated_at）
+- 新增表 `knowledge_document_id_recycle`（recycled_id 主键 / created_at）
+- 新增表 `knowledge_document_id_seq`（next_id，当前 16）
+- `knowledge_documents.id` 由自增改为服务层显式分配（实体去掉 @GeneratedValue）
