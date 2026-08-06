@@ -3311,3 +3311,39 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 本次仅对齐边框与等高，属于 R14 视觉美化的收尾；后续整体布局重构（如卡片栅格重排）不在此次范围
 - 待确认：是否推送本轮提交到 GitHub
+
+
+## 步骤82 — 用户管理新增用户 + 全端修改密码（R16）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：系统管理员需要在"用户管理"直接创建账号（原仅 APP 注册可建号）；并明确初始密码统一 123456、管理员验证手机号后可改他人密码、全端（Web/App）支持自助改密。经讨论确认：允许创建管理员账号但**最多 3 个**；初始密码统一 123456；管理员改密需验证绑定手机号一致；专家领域字段在用户管理不再录入（作为简介在专家工作台展示）。
+
+### 后端改动（3 个新接口 + 公共密码策略）
+- `common/PasswordPolicy.java`（新建）：统一密码规则（>=8位含字母数字）+ 初始密码常量 123456；`AuthService.register` 复用该校验，消除重复
+- `POST /api/v1/admin/users`（`AdminController.createUser` + `AdminService.createUser` + `CreateUserRequest`）：
+  - 用户名 3-50 唯一；手机号格式+唯一；角色限 ADMIN/OWNER/WORKER/EXPERT
+  - **ADMIN 上限 3 个**（创建与编辑统一走 `ensureAdminLimit`，防止绕过）
+  - 员工必选归属棚主（校验存在）；初始密码统一 123456（BCrypt 加密）；默认启用
+- `PUT /api/v1/admin/users/{id}/password`（`AdminService.resetUserPassword` + `AdminResetPasswordRequest`）：
+  - 需传入绑定手机号，与库中一致才允许改密；用户未绑定手机号则拒绝；新密码走 `PasswordPolicy`
+- `PUT /api/v1/auth/password`（`AuthService.changePassword` + `ChangePasswordRequest`）：旧密码验证 + 新密码复杂度；改密后登录态（JWT）不失效
+
+### Web 端改动
+- `api/admin.js`：新增 `createUser`、`adminResetPassword`；`api/auth.js`（新建）：新增 `changeMyPassword`
+- `views/users/UserList.vue`：工具栏"新增用户"按钮 + 弹窗（用户名/真实姓名/手机号/角色，选员工联动出现归属棚主下拉）；编辑弹窗内嵌"修改密码"区（验证手机号 + 新密码 + 确认，独立提交）；提示初始密码 123456
+- `layouts/MainLayout.vue`：顶栏用户名改为下拉（修改密码/退出登录）+ 改密弹窗（原密码/新密码/确认）
+
+### Android 端改动
+- `data/model/ChangePasswordRequest.java`（新建）；`GreenhouseApiService` + `AuthRepository` 增加 `changePassword`
+- `ui/profile/ProfileFragment` + `fragment_profile.xml`：新增"修改密码"入口 → 弹窗（原密码/新密码/确认，前端校验与后端一致），成功后登录态保持
+
+### 验证（实测）
+- ✅ `mvn compile` 通过（backend + common）
+- ✅ 后端接口实测：创建棚主/员工成功；员工未选归属棚主 400；重复用户名拒绝；ADMIN 第 3 个创建 400（上限生效）；改密错误手机号 400、正确手机号 200 且新密码可登录；自助改密错误旧密码 400、正确后 200 且新密码可登录
+- ✅ 无头 Edge UI 实测（admin/123456 真实登录）：新增用户弹窗正常、选"员工"出现归属棚主、编辑弹窗出现修改密码区、顶栏下拉含"修改密码"，控制台无业务报错
+- ✅ 测试数据已清理（用户数恢复 5；`test_user_082` 为历史测试遗留数据，未改动）
+
+### 说明
+- 启动后端时曾遇 `PasswordPolicy NoClassDefFoundError`：根因是 common 模块未安装到本地 Maven 仓库，`spring-boot:run -pl backend` 使用了旧 common jar；已执行 `mvn install -pl common` 修复（start_all 后续启动需保证 common 已安装）
+- 待确认：是否推送本轮提交到 GitHub

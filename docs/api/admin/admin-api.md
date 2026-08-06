@@ -269,3 +269,12 @@ Authorization: Bearer <token>
 | 1002 | 404 | 用户不存在 |
 | 1001 | 400 | 参数错误 |
 | 1003 | 500 | AI引擎切换失败 |
+
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤82：新增用户 + 管理员改密）
+
+- `POST /api/v1/admin/users` — 新增用户：初始密码统一 123456；ADMIN 角色最多 3 个；员工必选归属棚主；用户名/手机号唯一性校验
+- `PUT /api/v1/admin/users/{userId}/password` — 管理员重置密码：需验证该用户当前绑定手机号一致；新密码 >=8位且包含字母和数字
+- 相关文件：`AdminController` / `AdminService` / `CreateUserRequest` / `AdminResetPasswordRequest` / `common/PasswordPolicy`

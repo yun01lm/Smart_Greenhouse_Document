@@ -130,3 +130,13 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 | 2001 | 401 | 未登录或Token已过期 |
 | 2002 | 401 | Token无效 |
 | 1001 | 400 | 参数错误（用户名/密码格式不符） |
+
+
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤82：用户自助改密）
+
+- `PUT /api/v1/auth/password` — 登录用户自助修改密码：`oldPassword` 校验 + `newPassword` 复杂度校验（>=8位含字母数字）；改密后 JWT 登录态不失效
+- 全端通用：Web 顶栏"修改密码"、Android 个人中心"修改密码"均调用此接口
+- 相关文件：`AuthController` / `AuthService` / `ChangePasswordRequest`
