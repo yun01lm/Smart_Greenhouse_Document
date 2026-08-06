@@ -468,3 +468,28 @@ public class KnowledgeIndexService {
 7. **低置信度引导专家**：诊断置信度<70%时，结果中必须标记 needExpert=true，APP端展示"建议求助专家"按钮。这是专家咨询系统的入口之一。
 
 8. **模型文件管理**：ResNet和Whisper的模型权重文件（.pt/.onnx）不提交到Git，通过Git LFS或独立存储管理。部署时通过Docker volume挂载到容器内。
+
+---
+
+## 变更记录（追加，2026-08-06 · 步骤76：Embedding 向量化真实化与健壮性）
+
+**背景**：上传 GBK 编码 txt 文档（13MB 小说《美食供应商》）向量化报错 `Input length = 1`；同时确认 RAG 检索链路可用性。
+
+**改动要点**
+- 向量化 Provider 已从 Mock 切换为真实 SiliconFlow：`.env.local` 中 `AI_EMBEDDING_PROVIDER=siliconflow`（`SILICONFLOW_API_KEY` 已配置并验证 HTTP 200，模型 `BAAI/bge-m3`，1024 维）
+- `EmbeddingProvider` 策略接口保持不变：`SiliconFlowEmbeddingProvider`（真实）/ `MockEmbeddingProvider`（`matchIfMissing` 默认兜底），切换仅改配置零代码改动 —— 符合本文档"配置驱动切换 Provider"设计原则
+- `SiliconFlowEmbeddingProvider`：
+  - `embedBatch` 分批调用（每批 32 条），批次间 500ms 间隔
+  - `callApi` 对 HTTP 429 限流退避重试（2s/4s/6s，最多 3 次），解析逻辑抽取为 `parseEmbeddings`
+- `KnowledgeService`：
+  - 新增 `readFileContent`：UTF-8 严格解码失败自动回退 GBK（兼容 Windows 记事本默认编码，解决 `MalformedInputException: Input length = 1`）
+  - `writeToChroma` 分批写入（每批 200 条），避免大文档单次请求体过大
+  - `indexDocument` 幂等化：已向量化文档先清旧向量再写入，重复索引不产生重复向量
+
+**验证结果**
+- 文档 6/7（番茄种植技术指南/常见病虫害防治手册）与文档 9（美食供应商.txt，2735 块）全部真实向量化成功
+- RAG 语义检索实测：问"番茄常见的病虫害"优先命中《常见病虫害防治手册》《番茄种植技术指南》，而非随机命中小说内容；DeepSeek 回答引用知识库来源
+
+**说明**
+- 大文档（2735 块）真实向量化耗时约 7.5 分钟，主要受 SiliconFlow 免费额度限流影响；建议生产使用更小知识文档或提升 API 配额
+- API Key 安全仍遵循本文档注意事项第 2 条：环境变量注入，禁止入库

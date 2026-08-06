@@ -3134,4 +3134,5 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 大文档（13MB/2735 块）真实向量化耗时约 7.5 分钟，主要受 SiliconFlow 限流影响；建议生产使用更小的知识文档或提高 API 配额
 - 向量化 provider 切换入口：`.env.local` 的 `AI_EMBEDDING_PROVIDER`（mock|siliconflow），Key 为 `SILICONFLOW_API_KEY`，均不入库
 - 重新向量化已支持：知识库页面再次触发索引会先清旧向量再写入
+- 模块文档同步追加（只追加不修改）：`docs/tech/ai-layer.md`（Embedding 真实化与健壮性）、`docs/api/knowledge/knowledge-api.md`（上传/索引接口实现说明）、`docs/api/qa/qa-api.md`（RAG 链路确认与实测）、`docs/prd/knowledge-corpus.md`（向量化实现状态更新）
 - 待确认：是否推送本轮提交到 GitHub
