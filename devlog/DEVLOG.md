@@ -3288,3 +3288,26 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 本次仅美化管理员数据总览；农户端深色大屏数据总览（SensorCards/TrendChart 等）不在本次范围
 - 待确认：是否推送本轮提交到 GitHub
+
+
+## 步骤81 — 数据总览（管理员）边框对齐：同行等高 + 统一边框线
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：R14 视觉美化后，用户反馈数据总览各内容块边框没有对齐、整体较杂乱。经排查，主因是同行两卡片内容高度不一致（环境聚合 vs 预警总览、最新预警 vs 天气），导致卡片底边参差；且区域选择卡、统计卡、区块卡边框样式不统一（部分无边框、部分深色线）。用户批准方案：仅改样式、不动任何数据与业务逻辑，实现"同行卡片等高 + 边框线统一对齐"。
+
+### 改动清单
+前端（web/src/views/dashboard/AdminDashboard.vue，仅 template 装饰 + style）：
+- 中间行（环境聚合/预警总览）、底部行（最新预警/天气）的 el-row 增加 class="equal-row"，通过 flex 拉伸使同行两卡内容区等高、底边对齐
+- 统一边框线：`.region-card` / `.stat-card` / `.section-card` 均改为 `1px solid #ebeef5`（浅灰细线），与后台整体卡片风格一致
+- 等高 CSS：`.equal-row .el-col{display:flex}`、`.section-card{flex:1}`、`.el-card__body{flex:1; flex-direction:column}`、`.env-grid{flex:1; align-content:center}`、`.alert-overview{flex:1}`、`.weather-card` 内容垂直居中
+- 区域选择卡 body 内边距微调（14px 18px），与区块卡片对齐
+
+### 验证（实测）
+- ✅ Vite 编译通过（模块请求 200，hmr 无报错）
+- ✅ Playwright 无头 Edge 登录 admin/123456 截图核对：统计行、环境聚合/预警总览行、最新预警/天气行三处卡片底边均对齐；边框统一为浅灰细线；页面渲染正常、无控制台错误
+- ✅ 数据链路未改动：统计/环境/预警/天气数据来源与展示逻辑与修改前一致
+
+### 说明
+- 本次仅对齐边框与等高，属于 R14 视觉美化的收尾；后续整体布局重构（如卡片栅格重排）不在此次范围
+- 待确认：是否推送本轮提交到 GitHub
