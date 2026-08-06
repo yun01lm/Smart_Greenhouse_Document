@@ -493,3 +493,17 @@ public class KnowledgeIndexService {
 **说明**
 - 大文档（2735 块）真实向量化耗时约 7.5 分钟，主要受 SiliconFlow 免费额度限流影响；建议生产使用更小知识文档或提升 API 配额
 - API Key 安全仍遵循本文档注意事项第 2 条：环境变量注入，禁止入库
+
+---
+
+## 变更记录（追加，2026-08-06 · 步骤77：Embedding TPM 限流处理）
+
+**背景**：真实向量化上线后，上传大文档（数千文本块）连续调用 SiliconFlow 触发 429，实测响应体 `Request was rejected due to rate limiting. Details: TPM limit reached.`（按 token/分钟 限流，窗口约 60s）。
+
+**处理措施（SiliconFlowEmbeddingProvider）**
+- 全局 `Semaphore(1)` 串行化所有 Embedding 请求，杜绝并发打爆限流
+- 批量向量化每批 32 条、批次间 2s 间隔
+- HTTP 429 时读取并记录响应体；按 60s/90s/120s/150s/180s 退避重试（匹配 TPM 窗口），最多 5 次
+- 上传链路改为异步：`KnowledgeService.uploadDocument` 事务提交后提交后台向量化任务（单线程），上传接口秒级返回，向量化失败不影响上传（文档保持待向量化、可手动重试）
+
+**说明**：TPM 限流下大文档（几 MB）向量化可能耗时数十分钟；生产建议提高 API 配额或使用体积适中的知识文档。

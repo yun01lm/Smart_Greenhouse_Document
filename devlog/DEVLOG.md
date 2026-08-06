@@ -3136,3 +3136,38 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 重新向量化已支持：知识库页面再次触发索引会先清旧向量再写入
 - 模块文档同步追加（只追加不修改）：`docs/tech/ai-layer.md`（Embedding 真实化与健壮性）、`docs/api/knowledge/knowledge-api.md`（上传/索引接口实现说明）、`docs/api/qa/qa-api.md`（RAG 链路确认与实测）、`docs/prd/knowledge-corpus.md`（向量化实现状态更新）
 - 待确认：是否推送本轮提交到 GitHub
+
+## 步骤77 — 知识库上传异步化 + SiliconFlow TPM 限流处理（上传不再失败）
+
+- **操作时间**：2026-08-06
+- **状态**：✅ 完成
+- **背景**：用户再次上传知识库文件失败。排查发现上传文件本身成功（DB 记录已建），失败发生在同步向量化：SiliconFlow Embedding 触发 TPM 限流（HTTP 429），且上传接口同步等待向量化完成，前端 axios 15 秒超时，用户侧表现为"不能添加知识库文件"。
+
+### 问题定位
+1. **同步向量化阻塞上传**：`uploadDocument` 内同步调用 `indexDocument`（大文档耗时几分钟），前端 15 秒超时必失败
+2. **后台任务事务时序**：上一轮将向量化提交后台时，后台线程在事务提交前查询文档 → "参数错误 - 文档不存在"
+3. **SiliconFlow TPM 限流（根因）**：实测 429 响应体为 `Request was rejected due to rate limiting. Details: TPM limit reached.`——免费额度按 **token/分钟** 限流（窗口约 60s）。大文档（几 MB 小说，数千文本块）向量化瞬间打爆 TPM，短退避重试（2-8s）无效
+
+### 改动清单
+后端（backend/src/main/java/com/greenhouse/）：
+- `module/knowledge/service/KnowledgeService.java`：
+  - `uploadDocument` 上传后不再同步向量化：保存文件+建记录后立即返回；通过 `TransactionSynchronizationManager.afterCommit` 在事务提交后把向量化任务提交到单线程线程池（自引用代理 `@Lazy self` 调用 `indexDocument` 保证事务生效，线程池守护线程）
+  - 新增 `vectorizeExecutor`（单线程串行，避免并发触发 Embedding API 限流）
+- `ai/siliconflow/SiliconFlowEmbeddingProvider.java`：
+  - 新增全局 `Semaphore(1)`：限制 Embedding API 同时最多 1 个请求
+  - `embedBatch` 批次 32 条 + 批次间 2s 间隔
+  - 429 处理：读取并记录响应体（识别 TPM limit）；等待 60s/90s/120s/150s/180s（TPM 窗口）重试，最多 5 次
+- `module/knowledge/controller/KnowledgeController.java` + `web/src/views/knowledge/KnowledgePage.vue`：上传提示改为"文档上传成功，向量化处理中（可稍后查看状态或手动重新向量化）"
+
+### 验证（实测）
+- ✅ 上传 GBK 编码小文档（大棚黄瓜栽培技术.txt）：**0.11 秒返回**，消息正确；后台 1.4 秒完成向量化（vectorIndexed=true, chunks=1）
+- ✅ 补跑 14 号小文档（上一轮事务时序失败遗留）：手动索引成功（chunks=1）
+- ✅ 编码兼容保持：GBK 回退日志正常（"UTF-8 解码失败，回退 GBK"）
+- ✅ 列表接口正常（page 从 1 起，total=8）；前端 KnowledgePage.vue 编译 OK
+- ✅ SiliconFlow 单条调用稳定（限流窗口外 200）
+
+### 说明
+- 旧文档 10/11/12（超神机械师.txt ×3）与 13（00909）为历史待向量化状态，可在前端列表点击"重新向量化"重试；大文件受 TPM 限制会较慢，建议分批处理
+- **建议**：知识库用于 AI 问答检索，推荐上传农业相关的 .md/.txt 小文档（几 KB ~ 数百 KB）；几 MB 的小说类文件会快速消耗 SiliconFlow 免费额度（TPM 限流），且对农业问答检索无价值
+- 若需要批量向量化大文件，可考虑提升 SiliconFlow 付费额度或接入其他 Embedding 服务（架构上仅需新增 Provider 实现）
+- 待确认：是否推送本轮提交到 GitHub
