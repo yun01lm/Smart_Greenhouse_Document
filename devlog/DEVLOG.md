@@ -3098,3 +3098,40 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 上传路径统一为 `uploads/corpus/yyyy/MM/dd/`（相对 backend 模块工作目录），音频绝对路径落库
 - 后续可选：批量上传、音频波形可视化、标注质量审核流程
 - 下一步：统一推送（全部轮次完成后由用户确认执行）
+
+## 步骤76 — 知识库向量化真实化与健壮性修复（编码兼容 + 分批 + 限流重试 + RAG 语义检索验证）
+
+- **操作时间**：2026-08-06
+- **状态**：✅ 完成
+- **背景**：用户上传 txt 文档（GBK 编码小说《美食供应商》，13MB）后点击向量化报错"向量化处理失败: Input length = 1"；同时确认向量化后 AI 问答能否先 RAG 检索资料再回答。
+
+### 问题定位
+1. **向量化失败根因**：`KnowledgeService.indexDocument` 用 `Files.readString(file, UTF_8)` 严格解码，GBK/ANSI 编码的 txt 直接抛 `java.nio.charset.MalformedInputException: Input length = 1`（与 Embedding API 无关）
+2. **大文档隐患**：13MB 文档切出 2735 块，`writeToChroma` 单请求全量提交（向量+文本+元数据）体积过大易失败；`SiliconFlowEmbeddingProvider.embedBatch` 也是全量单次调用
+3. **限流**：2735 块真实向量化时连续调用 SiliconFlow API 触发 HTTP 429
+4. **配置**：`.env.local` 中 `AI_EMBEDDING_PROVIDER=mock`（用户只填了 Key 未切换 provider），检索向量随机、无语义相关性
+
+### 改动清单
+后端（backend/src/main/java/com/greenhouse/）：
+- `module/knowledge/service/KnowledgeService.java`：
+  - 新增 `readFileContent(Path)`：UTF-8 严格解码失败自动回退 GBK（兼容 Windows 记事本默认编码）
+  - `writeToChroma` 改为分批写入（每批 200 条，Chroma REST /add 多次调用），大文档不再单次提交巨量数据
+  - `indexDocument` 幂等化：已向量化的文档先 `deleteFromChroma` 清旧向量再写入，重复索引不产生重复向量
+- `ai/siliconflow/SiliconFlowEmbeddingProvider.java`：
+  - `embedBatch` 分批调用（每批 32 条）+ 批次间 500ms 间隔
+  - `callApi` 对 HTTP 429 退避重试（2s/4s/6s，最多 3 次），抽取 `parseEmbeddings`
+- `.env.local`（gitignored，不入库）：`AI_EMBEDDING_PROVIDER=mock` → `siliconflow`（Key 已验证 HTTP 200，bge-m3 1024 维）
+
+### 验证（实测）
+- ✅ SiliconFlow Key 直连验证：HTTP 200，1024 维
+- ✅ 文档 6/7（番茄种植技术指南/常见病虫害防治手册）：真实向量化成功，各 2 块
+- ✅ 文档 9（美食供应商.txt，13MB GBK）：重新向量化成功 2735 块（首次因 429 失败，修复限流重试后 7.5 分钟完成）
+- ✅ DB：三文档 vector_indexed=1（6/7:2块，9:2735块）
+- ✅ RAG 语义检索（真实向量）：问"番茄常见的病虫害"→ 检索命中《常见病虫害防治手册》《番茄种植技术指南》居前；问"大棚番茄浇水施肥"→ 命中《番茄种植技术指南》居前；DeepSeek 回答引用知识库内容
+- ✅ 完整链路确认：上传 → 切片 → 真实向量化 → Chroma 存储 → 问题向量化 → Chroma 检索(topK=5) → 组装上下文 → DeepSeek 生成 → 返回引用来源；农业域守卫（R7）拦截非农问题
+
+### 说明
+- 大文档（13MB/2735 块）真实向量化耗时约 7.5 分钟，主要受 SiliconFlow 限流影响；建议生产使用更小的知识文档或提高 API 配额
+- 向量化 provider 切换入口：`.env.local` 的 `AI_EMBEDDING_PROVIDER`（mock|siliconflow），Key 为 `SILICONFLOW_API_KEY`，均不入库
+- 重新向量化已支持：知识库页面再次触发索引会先清旧向量再写入
+- 待确认：是否推送本轮提交到 GitHub
