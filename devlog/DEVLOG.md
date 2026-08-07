@@ -3479,3 +3479,21 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - weather_cache 为纯缓存，清空后自动重建；旧记录（无 cacheType）不会被新查询命中
 - 待确认：是否推送本轮提交到 GitHub
+
+## 步骤88 — 天气卡片标注实际天气位置（R19 收尾）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户要求数据总览的天气卡片标注出"显示的是哪里的天气"。原卡片右上角仅显示地区标签（如"全部地区"），而实际天气数据由后端按城市查询（默认北京），来源不明确。
+
+### 改动清单
+1. `AdminDashboard.vue`（系统管理员数据总览）：天气描述下方新增 `📍 {{ weather.location }}` 标注实际天气城市；header 右上角保留地区标签；样式 `.weather-loc`（12px 灰色）
+2. `DashboardPage.vue`（农户端主页）：修正天气描述字段（`weatherData.weather || weatherData.description` → `weatherData.weatherText`，与后端字段对齐）；同样新增 `📍 {{ weatherData.location }}` 位置标注；样式适配深色主题
+
+### 验证
+- ✅ Vite 热更新无编译错误（AdminDashboard.vue / DashboardPage.vue hmr update）
+- ✅ 天气接口返回 location 字段（如北京 35°C 晴），前端直接展示
+- ✅ 说明：管理员选择"全部地区"时后端默认查北京，卡片标注"北京"可明确数据来源
+
+### 说明
+- 待确认：是否推送本轮提交到 GitHub
