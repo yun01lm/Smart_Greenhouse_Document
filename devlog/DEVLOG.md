@@ -3683,3 +3683,32 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 技术员默认权限全开（APP 端 RoleAdapter 已支持），后端仍按权限表强制校验
 - 专家端实时聊天（R25）按用户指示暂缓，待棚主端功能完成后另行讨论
 - 本轮未推送 GitHub（用户指示暂缓推送）
+
+## 步骤95 — 员工管理优化：员工列表展示分配大棚 + 权限设置列出棚主全部大棚（R26.1）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户反馈①员工管理列表需要把每个员工分配的大棚名字列出来；②权限设置界面保持现有勾选样式，但要把棚主的所有大棚都列出来，由棚主为每个大棚分配员工权限（此前仅显示员工已有权限记录的大棚）。
+
+### 改动清单
+1. 后端
+   - `EmployeeResponse.java` — 新增 `greenhouseNames`（员工被授权的大棚名称列表）
+   - `PermissionService.java` — `listEmployees()` 为每个员工填充 `greenhouseNames`（新增 `greenhouseNamesOf()` 辅助方法）；`updatePermission()` 由「仅更新已有记录」改为 **upsert**：员工无该大棚权限记录时，校验大棚归属棚主后按角色默认值（permOrDefault）新建，从而支持棚主为全部大棚统一分配权限
+2. Web 端（`web/src/views/owner/EmployeeManage.vue`）
+   - 员工表格新增「分配大棚」列（greenhouseNames 顿号拼接，空则显示「未分配」）
+   - 权限设置对话框：列出棚主全部大棚，与员工已有权限合并；无权限记录的大棚按角色默认值初始化（技术员全开；普通员工默认「看数据+控设备+看预警」），保存时对所有大棚提交（后端 upsert）
+3. Android 端
+   - `EmployeeItem.java` — 新增 `greenhouseNames` 字段
+   - `item_employee.xml` / `EmployeeAdapter.java` — 员工行展示「大棚：xxx、yyy」（空则「未分配大棚」）
+   - `EmployeeManagementActivity.showPermissionDialog()` — 合并棚主全部大棚 + 员工已有权限，无记录大棚按角色默认值初始化，保存时全量提交（后端 upsert）
+
+### 验证
+- ✅ `mvn compile` 通过，后端已重启生效（8080）
+- ✅ 实测：`GET /owner/employees` 返回 greenhouseNames（worker01 两个大棚、tech01 两个大棚）
+- ✅ 实测 upsert：给 tech01 分配原本无权限记录的「测试大棚-济南历城」（ghId=2）→ 权限记录创建成功，权限列表由 1 条变 2 条
+- ✅ Web Vite 编译通过（EmployeeManage.vue HTTP 200 + HMR）
+- ⚠️ Android 端需在 Android Studio 编译验证（本环境无 SDK）
+
+### 说明
+- 权限保存为全量覆盖：对话框内所有大棚的勾选状态都会提交，未勾选即取消对应权限
+- 本轮未推送 GitHub（用户指示暂缓推送）

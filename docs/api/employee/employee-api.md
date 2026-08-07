@@ -249,3 +249,12 @@ Authorization: Bearer <token>
 - 新增文件：`EmployeeItem/AddEmployeeRequest/EmployeePermissionItem/UpdatePermissionRequest/ResetPasswordRequest`（模型）、`EmployeeRepository`（仓库）、`EmployeeViewModel`（VM）、`EmployeeAdapter`（列表）、`EmployeeManagementActivity`（页面）
 - 功能：员工列表（类型标签）、新增员工（创建/邀请双模式 + 授权大棚）、权限设置（按大棚 6 项权限勾选）、重置密码、移除员工（二次确认）
 - 技术员默认权限全开；普通员工默认「看数据+控设备+看预警」；权限变更由棚主在 APP/Web 端操作，后端权限表强制校验
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤95：员工大棚展示 + 权限全大棚分配）
+
+- `GET /api/v1/owner/employees` — 响应新增 `greenhouseNames`（List<String>，员工被授权的大棚名称列表）
+- `PUT /api/v1/owner/employees/{employeeId}/permissions` — 由「仅更新已有权限记录」改为 upsert：员工在该大棚无权限记录时，校验大棚归属棚主后按角色默认值新建权限记录（技术员默认全开；普通员工默认「看数据+控设备+看预警」）
+- Web/Android 端权限设置界面：列出棚主全部大棚，与员工已有权限合并后由棚主逐大棚勾选 6 项权限；保存时全量提交（未勾选即取消对应权限）
+- 相关文件：`PermissionService` / `EmployeeResponse` / Web `EmployeeManage.vue` / Android `EmployeeManagementActivity` 等
