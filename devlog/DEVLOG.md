@@ -3861,3 +3861,9 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 授权状态：PENDING 不可重复申请，REJECTED/REVOKED/EXPIRED 可重新申请
 - ChatService.java 本次提交包含行尾符规范化（CRLF→LF，一次性）
 - 本轮未推送 GitHub（按提交策略本地提交）
+## 运维记录 — 技术员账号密码重置（2026-08-08）
+
+- **操作**：技术员账号 `tech01` 登录报 429（登录接口限流：每分钟 5 次/IP，超限返回 429）→ 等待窗口后报 401（密码错误，非初始密码 123456）
+- **处理**：按项目规则（管理员可初始化账号密码，初始密码统一 123456），将 `tech01` 密码重置为 123456（复制 owner01 的 BCrypt 哈希）
+- **验证**：`POST /api/v1/auth/login`（tech01/123456）返回 200，角色 TECHNICIAN，可正常登录 Web 端
+- **说明**：登录限流为内存计数（`RateLimitInterceptor`，登录 5 次/分钟/IP、普通 API 60 次/分钟/IP），重启后端即清零；如反复输错触发 429，等待 1 分钟或重启后端即可恢复
