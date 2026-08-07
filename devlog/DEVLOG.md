@@ -3574,3 +3574,76 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 模拟预警数据（6条，步骤89后补插）保留在库中供演示
 - 本轮未推送 GitHub（用户指示暂缓推送）
+
+## 步骤92 — 后端角色与权限模型升级：技术员角色 + 默认权限 + 关闭注册 + QA鉴权（R23）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户确认新增「技术员（TECHNICIAN）」角色，与普通员工（WORKER）同属员工层级但权限更高：技术员可登录 Web+APP 且默认权限全部开放；普通员工仅 APP 且默认仅「看数据+控设备+看预警」；普通员工不能使用 AI 问答/专家咨询；关闭公开注册，账号仅由管理员/棚主创建；棚主可直接创建员工账号并初始化密码。
+
+### 改动清单
+1. 后端角色模型
+   - `User.java` — `Role` 枚举新增 `TECHNICIAN`（技术员，APP+Web端，员工层级，默认权限高于普通员工）
+   - `EmployeeResponse.java` — 响应新增 `role` 字段（返回 WORKER/TECHNICIAN），`fromUser` 带上
+   - 数据库 `users.role` 枚举列 ALTER：`enum('ADMIN','EXPERT','OWNER','TECHNICIAN','WORKER')`
+2. 员工管理双模式（创建/邀请）
+   - `AddEmployeeRequest.java` — 重构：邀请模式 `identifier`（用户名/手机号）；创建模式 `username/realName/phone/password` + `roleType`（WORKER/TECHNICIAN）+ `greenhouseId`；权限字段可空，按角色默认值填充
+   - `PermissionService.java` — `addEmployee` 双模式实现 + `permOrDefault()`（技术员默认全开，普通员工按默认值）；`listEmployees` 同时返回 WORKER+TECHNICIAN；新增 `resetEmployeePassword()`；注入 `PasswordEncoder`
+   - `PermissionController.java` — 新增 `PUT /api/v1/owner/employees/{employeeId}/password` 重置员工密码（修复历史损坏注释）
+   - 新增 `ResetEmployeePasswordRequest.java`
+3. 权限访问控制全链路适配 TECHNICIAN
+   - `PermissionAspect.java` — `checkGreenhouseAccess` 增加 TECHNICIAN 分支（同 WORKER 走权限表校验）；`checkFunctionAccess` 从仅 WORKER 扩展为 WORKER/TECHNICIAN
+   - `DeviceService/ControlService/GreenhouseService` — 各 `switch(role)` 增加 TECHNICIAN 分支（同 WORKER：权限表校验 / 被授权大棚列表）
+   - `ReportAccessService.java` — 导出权限允许 TECHNICIAN（同 WORKER 按权限表校验）
+   - `AlertRuleService.java` — 预警规则访问/可见大棚列表允许 TECHNICIAN
+   - `AdminService.java` — `regionOwnerKey`（TECHNICIAN 归其棚主）、`getRoleLabel`（技术员）、`createUser` 员工必填归属棚主校验扩展至 TECHNICIAN；`CreateUserRequest` 注释更新
+   - `AuthService.java` — 注册校验扩展至 TECHNICIAN（防御性，注册接口已关闭）
+   - `AdminOwnerController.java` — 棚主「员工数」统计含 TECHNICIAN
+4. 关闭公开注册
+   - `SecurityConfig.java` — 移除 `/api/v1/auth/register` 白名单（permitAll）
+   - `AuthController.java` — register 端点保留但直接返回「注册功能已关闭，账号请联系管理员或棚主创建」
+5. QA 鉴权
+   - `QaController.java` — 注入 `UserRepository`，`ask/askVoice/records` 三端点校验：普通员工（WORKER）直接拒绝（FUNCTION_DENIED「普通员工无 AI 问答权限」）；OWNER/TECHNICIAN/ADMIN/EXPERT 放行
+
+### 验证（实测 API）
+- ✅ 匿名 POST /api/v1/auth/register → 403（注册关闭）
+- ✅ 棚主 POST /owner/employees 创建技术员 tech01（roleType=TECHNICIAN）→ 成功，登录返回 role=TECHNICIAN
+- ✅ PUT /owner/employees/11/password 重置密码 → 成功，新密码可登录
+- ✅ GET /owner/employees 返回 role 字段（worker01=WORKER，tech01=TECHNICIAN）
+- ✅ 技术员调用 /api/v1/qa/records → 200 正常
+- ✅ 普通员工 worker02 调用 /api/v1/qa/records → 403（FUNCTION_DENIED「普通员工无 AI 问答权限」）
+- ✅ DELETE /owner/employees/{id} 移除测试员工 worker02
+- ✅ `mvn compile` 通过，后端已重启生效（8080）
+
+### 说明
+- 技术员默认权限全开但可被棚主收紧，后端仍走权限表强制校验（非仅前端隐藏）
+- 测试账号 tech01（技术员，初始密码已重置为 xyz78901）保留作为演示数据；worker02 验证后已删除
+- 本轮未推送 GitHub（用户指示暂缓推送）
+
+## 步骤93 — 棚主员工管理 Web 页 + 技术员 Web 菜单 + 普通员工禁登 Web（R24）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：R23 后端员工管理接口就绪后，补齐前端：棚主 Web 端新增「员工管理」菜单与页面；技术员可登录 Web 端（默认开放全部页面）；普通员工不允许登录 Web 端（仅 APP）。
+
+### 改动清单
+1. Web 员工管理页
+   - 新增 `web/src/views/owner/EmployeeManage.vue` — 员工列表（类型标签：普通员工/技术员）、新增员工（创建账号/邀请已有账号双模式 + 授权大棚选择）、权限设置（按大棚勾选 6 项权限）、重置密码、移除员工（二次确认）
+   - 新增 `web/src/api/employee.js` — 员工列表/新增/权限/重置密码/移除接口封装
+2. 角色菜单与路由
+   - `MainLayout.vue` — OWNER 菜单新增「员工管理」（/employees）；新增 `TECHNICIAN` 菜单配置（数据总览/设备管理/预警配置/数据导出/AI 问答）；移除 `WORKER` 菜单
+   - `router/index.js` — 新增 `/employees` 路由（仅 OWNER）；新增 `/blocked` 路由（普通员工提示页）；dashboard/devices/alerts/export/qa 路由角色从 WORKER 调整为 TECHNICIAN；路由守卫：普通员工（WORKER）一律重定向 /blocked
+   - 新增 `web/src/views/Blocked.vue` — 「请使用手机 APP 登录」提示页
+3. Android 最小适配（技术员可用 APP）
+   - `RoleAdapter.java` — 新增 `ROLE_TECHNICIAN` 与 `isTechnician()`；`hasPermission()` 对技术员默认返回 true（后端仍强制校验）
+   - `MainActivity.java` — 技术员同棚主：全部底部 Tab 可见
+   - `ProfileFragment.java` — 角色标签增加「技术员」
+
+### 验证
+- ✅ Vite 编译通过（EmployeeManage.vue / Blocked.vue / employee.js / router 均 HTTP 200）
+- ✅ 后端接口实测配合（R23 已验：创建技术员/重置密码/权限列表/移除员工）
+- ⚠️ 浏览器端最终显示效果待用户在 Edge 中确认（本轮环境无可用 CDP 调试端口）
+
+### 说明
+- 专家端入口（专家工作台扩展/实时聊天）按用户指示暂缓，待棚主端功能完成后另行讨论
+- 本轮未推送 GitHub（用户指示暂缓推送）

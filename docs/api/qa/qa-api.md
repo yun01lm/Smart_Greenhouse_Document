@@ -158,3 +158,10 @@ Authorization: Bearer <token>
 ### 实测（2026-08-06）
 - 问"番茄常见的病虫害有哪些？应该如何防治？" → 检索命中《常见病虫害防治手册》《番茄种植技术指南》居前，DeepSeek 引用知识库作答
 - 问"大棚番茄浇水施肥有什么注意事项？" → 检索命中《番茄种植技术指南》居前
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤92：普通员工禁用 AI 问答）
+
+- `POST /api/v1/qa/ask` / `POST /api/v1/qa/ask/voice` / `GET /api/v1/qa/records` — 增加角色校验：普通员工（WORKER）直接拒绝（code 3003 FUNCTION_DENIED「普通员工无 AI 问答权限」）；OWNER/TECHNICIAN/ADMIN/EXPERT 正常使用
+- 相关文件：`QaController`

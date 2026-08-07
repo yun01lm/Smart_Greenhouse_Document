@@ -140,3 +140,11 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 - `PUT /api/v1/auth/password` — 登录用户自助修改密码：`oldPassword` 校验 + `newPassword` 复杂度校验（>=8位含字母数字）；改密后 JWT 登录态不失效
 - 全端通用：Web 顶栏"修改密码"、Android 个人中心"修改密码"均调用此接口
 - 相关文件：`AuthController` / `AuthService` / `ChangePasswordRequest`
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤92：关闭公开注册）
+
+- `POST /api/v1/auth/register` — 公开注册已关闭：不再放行匿名请求（SecurityConfig 移除 permitAll），端点保留但直接返回「注册功能已关闭，账号请联系管理员或棚主创建」
+- 账号创建渠道收口：管理员创建棚主/专家/全部账号（`POST /api/v1/admin/users`），棚主创建员工账号（`POST /api/v1/owner/employees`）
+- 相关文件：`SecurityConfig` / `AuthController`

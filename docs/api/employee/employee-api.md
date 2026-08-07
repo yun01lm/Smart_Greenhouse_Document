@@ -229,3 +229,13 @@ Authorization: Bearer <token>
 | 2004 | 409 | 手机号已注册 |
 | 1002 | 404 | 员工不存在 |
 | 1001 | 400 | 参数错误 |
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤92：技术员角色 + 员工管理双模式 + 重置密码）
+
+- `POST /api/v1/owner/employees` — 重构为双模式：创建模式（username/realName/phone/password + roleType=WORKER|TECHNICIAN + greenhouseId）；邀请模式（identifier 用户名/手机号 + greenhouseId）。权限字段可空，未传时按角色默认值：技术员全部开放；普通员工默认「看数据+控设备+看预警」
+- `GET /api/v1/owner/employees` — 返回 WORKER+TECHNICIAN 两类员工，响应新增 `role` 字段（WORKER/TECHNICIAN）
+- 新增 `PUT /api/v1/owner/employees/{employeeId}/password` — 棚主重置/初始化员工密码（新密码 >=8位且含字母和数字）
+- 新增 `TECHNICIAN` 角色：可登录 Web+APP，默认权限全部开放但可被棚主收紧，后端按权限表强制校验
+- 相关文件：`PermissionController` / `PermissionService` / `AddEmployeeRequest` / `ResetEmployeePasswordRequest` / `EmployeeResponse` / `User.Role`
