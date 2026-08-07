@@ -260,3 +260,10 @@ Authorization: Bearer <token>
 - 功能：将已关闭（CLOSED）的会话重新开启为进行中（ACTIVE），并清空关闭时间 `closedAt`，双方可继续沟通
 - 权限：仅会话参与者（用户或专家）可操作；非参与者返回 `3002 ACCESS_DENIED`，非 CLOSED 状态返回 `1001 PARAM_ERROR`（提示「仅已关闭的会话可以重新开启」）
 - 前端：专家端 `ExpertChat.vue` 在会话状态为 CLOSED 时显示「重新开启」按钮，操作成功后刷新会话列表与消息
+---
+
+## 变更记录（追加，2026-08-08 · 步骤99：专家发消息重复显示修复 R27.2）
+
+- 问题：`POST /api/v1/chat/messages` 发送成功后，WebSocket 会将该消息推送给对话双方（含发送者自己），前端 REST 响应与 WS 推送都可能追加同一条消息，导致发送者看到两条一样的内容
+- 修复：专家端 `ExpertChat.vue` 的 `doSend()` 在追加消息前按 `id` 去重（WS 与 REST 谁先到达只渲染一次）；`onWsMessage()` 原有 id 去重保留
+- 影响面：仅前端展示逻辑，接口与数据存储不变；对方仍通过 WS 实时收到消息

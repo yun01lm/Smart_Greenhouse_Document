@@ -3804,3 +3804,22 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 重新开启后状态置为 ACTIVE（非 WAITING），双方可直接继续沟通
 - 关闭时间 `closedAt` 同步清空，避免历史状态残留
 - 本轮未推送 GitHub（按提交策略本地提交）
+## 步骤99 — 专家发消息重复显示修复（R27.2）
+
+- **操作时间**：2026-08-08
+- **状态**：✅ 完成
+- **背景**：用户反馈专家端发消息会出现两条一样的消息。原因：后端 `ChatService.sendMessage` 会将消息同时 WebSocket 推送给对话双方（含发送者自己），前端 `ExpertChat.vue` 的 `doSend()` 收到 REST 响应后又无条件 `push` 到消息列表；WS 推送先于 REST 响应到达时，同一条消息（同一 id）被追加两次。
+
+### 改动清单
+1. Web 端 — 专家端 `ExpertChat.vue`
+   - `doSend()`：追加消息前增加按 id 去重校验（`!messages.value.some(m => m.id === msg.data.id)`），无论 WS 与 REST 谁先到达，同一条消息只入列表一次
+   - 原有 `onWsMessage()` 的 id 去重保留，双通道（WS + 30s 轮询）均不会重复渲染
+
+### 验证
+- ✅ 修复逻辑覆盖两种竞态：WS 先到（onWsMessage 追加）→ REST 后到（doSend 去重跳过）；REST 先到（doSend 追加）→ WS 后到（onWsMessage 去重跳过）
+- ✅ `vite build` 通过（10.71s，无编译错误）
+- ⚠️ 实际浏览器效果需用户发消息实测确认
+
+### 说明
+- 后端推送双方的设计保留（用于对方实时接收），仅前端发送侧做幂等去重，改动最小
+- 本轮未推送 GitHub（按提交策略本地提交）
