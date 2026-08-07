@@ -3430,3 +3430,29 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 和风免费开发版仅支持当前天气 + 3 天预报，7 天预报需付费订阅（代码已支持 3/7，前端按 3 天使用）
 - GeoAPI 免费开发版路径：`https://devapi.qweather.com/geo/v2/city/lookup`
 - 待确认：是否推送本轮提交到 GitHub
+
+## 步骤86 — 真实天气验证通过 + 专属 Host 配置（R19 收尾）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 验证通过（另发现 3 个待修复问题）
+- **背景**：用户填入和风 Key 后，后端与浏览器均返回 403 Invalid Host。经排查：该 Key 绑定了**和风专属 API Host**（`nb5pwfbb5u.re.qweatherapi.com`），公共域名（devapi/api/geoapi）均不可用，必须使用专属域名。
+
+### 改动清单
+1. `application-dev.yml`：`qweather.base-url` 改为 `${QWEATHER_BASE_URL:https://devapi.qweather.com}`（环境变量注入）
+2. `.env.local`（gitignored）：新增 `QWEATHER_BASE_URL=https://nb5pwfbb5u.re.qweatherapi.com`，与 Key 配套
+
+### 验证（实测真实数据）
+- ✅ 当前天气 北京：35°C、晴、东风 23、湿度 54%
+- ✅ 当前天气 石家庄市（中文地名 → GeoAPI → LocationID 转换）：34°C、多云
+- ✅ 3 天预报 北京：雷阵雨 23~35°C / 多云 20~30°C / 晴 21~31°C
+- ✅ Web 代理路径 广州：33°C、多云
+- ✅ 管理员数据总览天气：北京 35°C（缓存命中）
+
+### 发现的问题（待修复）
+1. **缓存键冲突**：`weather_cache` 表当前天气与预报共用 `location` 作为唯一键，先查预报再查当前天气时，当前天气会命中预报缓存（返回预报首日数据，如 humidity=77、weatherCode=302 而非真实当前值）
+2. **缓存字段缺失**：`WeatherCache` 实体未存 `weatherText/feelsLike/pressure/visibility` 等字段，缓存命中时这些字段为 null（天气描述无法显示）
+3. **前端字段不匹配**：`AdminDashboard.vue` 天气描述用 `weather.weather || weather.description`，实际字段为 `weatherText`，导致描述始终为空
+
+### 说明
+- 和风免费开发版仅支持当前天气 + 3 天预报；GeoAPI 走专属域名路径 `/geo/v2/city/lookup` 正常
+- 待确认：是否修复上述 3 个问题 + 是否推送本轮提交
