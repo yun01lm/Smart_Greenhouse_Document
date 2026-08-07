@@ -193,3 +193,42 @@ Authorization: Bearer <token>
 |------|---------|---------|------|
 | /api/v1/sensors/history | GET | POST | 复杂查询需RequestBody（时间范围、聚合参数等），POST是正确的RESTful实践 |
 | /api/v1/sensors/compare | GET | POST | 多组对比需RequestBody（deviceIds数组等），POST是正确的RESTful实践 |
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤96：环境参数短期预测接口）
+
+**请求：**
+```
+GET /api/v1/sensors/forecast?greenhouseId=1&sensorType=TEMPERATURE&steps=4&intervalMinutes=30
+Authorization: Bearer <token>
+```
+
+**参数：**
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| greenhouseId | 是 | 大棚ID |
+| sensorType | 是 | 传感器类型（TEMPERATURE / HUMIDITY / SOIL_TEMP / ...） |
+| steps | 否 | 预测步数，默认 4，范围 1-12 |
+| intervalMinutes | 否 | 每步间隔（分钟），默认 30，范围 5-60 |
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "greenhouseId": 1,
+    "sensorType": "TEMPERATURE",
+    "intervalMinutes": 30,
+    "points": [
+      {"timestamp": "2026-08-07T16:16:30.497Z", "value": 23.86}
+    ]
+  }
+}
+```
+
+**说明：**
+- 第一阶段为统计外推（最近 12 点线性回归 + 0.9 阻尼 + 传感器范围钳制），对应 PRD US-005 的分阶段实施策略
+- 后续 LSTM 模型训练完成后替换 `TrendPredictor` Provider 实现即可，接口保持不变

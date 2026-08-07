@@ -241,3 +241,14 @@ related_docs:
 - 棚主数据总览“最新预警”（AlertList.vue）：每条预警显示 已处理（绿）/未处理（黄）状态
 - 未处理预警显示“处理”按钮（loading 防重复点击），点击调用 `PUT /api/v1/alerts/{id}/handle`，成功后即时变“已处理”并淡化
 - 已处理预警不再显示按钮
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤96：趋势图加入短期预测 + 刻度放大）
+
+- **范围**：农户端数据总览趋势卡片（web/src/views/dashboard/TrendChart.vue + DashboardPage.vue + api/sensor.js）与后端 sensor 模块预测接口
+- **短期预测**：趋势图新增「预测温度 / 预测湿度」虚线序列（未来 2 小时、30 分钟步长），从最后一个实际点衔接，并带「现在」竖线标记；预测基于统计外推（线性回归 + 阻尼），LSTM 就绪后替换 Provider 实现即可
+- **刻度放大**：y 轴按实际 + 预测数据收缩范围（15% 内边距、最小 0.5），小波动在图中更明显
+- **接口**：新增 `GET /api/v1/sensors/forecast`（详见 docs/api/sensor/sensor-api.md）
+- **验证**：mvn compile 通过；后端实测返回 4 步预测；Vite 编译通过
+- **未覆盖**：管理员地区数据总览（AdminDashboard.vue）暂无趋势图，如需地区级预测另行讨论

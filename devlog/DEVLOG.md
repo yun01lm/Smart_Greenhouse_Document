@@ -3712,3 +3712,31 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 权限保存为全量覆盖：对话框内所有大棚的勾选状态都会提交，未勾选即取消对应权限
 - 本轮未推送 GitHub（用户指示暂缓推送）
+
+## 步骤96 — 环境趋势图加入短期预测 + 刻度放大（R26.2）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户反馈数据总览的趋势卡片只有温度/湿度两条实际曲线，看不到 PRD US-005 规划的「环境参数短期预测」；且模拟数据波动小、曲线接近平直，需要把 y 轴刻度收窄以放大波动。
+
+### 改动清单
+1. 后端（sensor 模块，新增统计预测，预留 LSTM 接口）
+   - 新增 `TrendPredictor`（Provider 接口）与 `StatisticalTrendPredictor`（第一阶段统计实现：最近 12 个历史点最小二乘线性回归求每小时斜率 → 以最后观测值为基准做 0.9 阻尼外推 → 按传感器类型钳制合理范围）
+   - 新增 `ForecastPoint` / `ForecastResponse` DTO
+   - `SensorDataService.getForecast()`：取近 24h 每小时聚合历史 → 预测未来 N 步（默认 4 步 × 30 分钟 = 未来 2 小时）
+   - `SensorController` 新增 `GET /api/v1/sensors/forecast?greenhouseId=&sensorType=&steps=&intervalMinutes=`
+2. Web 端
+   - `api/sensor.js` — 新增 `getSensorForecast()`
+   - `DashboardPage.vue` — 并行拉取温度/湿度预测，`buildForecast()` 按分钟粒度合并后传入趋势图（预测接口失败静默降级，不影响历史曲线）
+   - `TrendChart.vue` — 新增「预测温度/预测湿度」虚线序列（从最后一个实际点衔接，延展未来 2 小时）+「现在」竖线标记；y 轴 min/max 按实际+预测数据收缩（留 15% 内边距、最小 0.5），放大曲线波动
+
+### 验证
+- ✅ `mvn compile` 通过；后端重启生效（8080）
+- ✅ 实测 `GET /sensors/forecast`：温度预测 23.86→23.88（平缓上升）、湿度预测 66.96→66.90（平缓下降），步长 30 分钟、共 4 步
+- ✅ Vite 编译通过（TrendChart.vue / DashboardPage.vue HTTP 200 + HMR）
+- ⚠️ 最终曲线显示效果需用户在浏览器确认（本环境无法直接查看渲染画面）
+
+### 说明
+- 预测为统计外推（Phase 1），后续 LSTM 训练完成后只需替换 `TrendPredictor` 实现，前端零改动
+- 模拟数据波动极小时预测线接近平直属正常现象（无趋势可外推）
+- 本轮未推送 GitHub
