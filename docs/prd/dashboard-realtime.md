@@ -222,3 +222,14 @@ related_docs:
 - **边框统一**：区域选择卡/统计卡/区块卡统一为 `1px solid #ebeef5` 浅灰细边框，与后台整体风格一致
 - **验证**：Vite 编译通过；无头 Edge 截图确认三处卡片底边对齐、边框统一、无控制台报错
 - **未覆盖**：农户端深色大屏数据总览保持原样；整体栅格布局重构留待后续
+
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤90：棚主数据总览前端修复）
+
+- **范围**：农户端深色数据总览（web/src/views/dashboard/DashboardPage.vue + web/src/api/sensor.js），仅前端，后端零改动
+- **传感器卡片**：新增 `flattenRealtime()` 将后端 `dataByType` 拍平为卡片字段（temperature/humidity/co2/light/soilTemperature/soilHumidity）；WebSocket 推送按 sensorType 映射更新对应卡片
+- **环境趋势**：新增 `getSensorHistory()` 调用 `/sensors/history`（近24h、1h聚合），展示真实温度/湿度曲线，移除"空数据画假曲线"兜底
+- **最新预警**：取数修正为 `data.records || data.list || []`（原逻辑在返回 {list:[]} 时把对象当数组）
+- **验证**：后端接口实测数据正常；Vite 编译通过；浏览器最终显示效果待用户确认

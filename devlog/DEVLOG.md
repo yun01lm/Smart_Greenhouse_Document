@@ -3526,3 +3526,26 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 天气统一按城市级查询（村级地名和风无法解析），天气卡片 `weather.location` 标注实际查询城市，卡片标题区仍显示所选地区层级
 - 地区树仍从大棚登记数据聚合（方案A），未引入全国行政区划表，符合"负担不要太大"的要求
 - 本轮未推送 GitHub（用户指示暂缓推送）
+## 步骤90 — 棚主数据总览前端修复：传感器卡片/趋势图/预警取数（R21）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户反馈棚主账号（张棚主/owner01）数据总览无数据。排查确认后端与模拟器数据链路完全正常（MQTT 实时入库并 WebSocket 推送；realtime/history/health/weather 接口用 owner01 实测均有数据）。问题定位在前端：G01 起 `DashboardPage.vue` 未适配后端 `dataByType` 嵌套结构，导致传感器卡片/趋势图/预警列表数据对不上。
+
+### 改动清单
+1. `web/src/views/dashboard/DashboardPage.vue`
+   - 新增 `flattenRealtime()`：把后端 `dataByType` 嵌套结构拍平为 `SensorCards` 需要的扁平字段（temperature/humidity/co2/light/soilTemperature/soilHumidity），修复全部卡片显示 `--`/无数据的问题
+   - 修正 WebSocket 实时合并：按 `sensorType → 卡片字段` 映射更新对应卡片（原逻辑把 `{sensorType,value,...}` 直接展开到顶层，卡片永远拿不到值）
+   - 新增历史数据加载：调用 `/sensors/history`（TEMPERATURE/HUMIDITY，近24小时、1h 聚合），组装为趋势图 `[{time,temperature,humidity}]`，替代原有"空数据生成假曲线"的兜底
+   - 修正预警列表取数：`data.records || data.list || []`（原逻辑在接口返回 `{list:[]}` 时把整个对象当数组，预警区显示异常）
+2. `web/src/api/sensor.js`：新增 `getSensorHistory(greenhouseId, payload)` 客户端方法
+
+### 验证
+- ✅ 后端接口实测（owner01）：realtime 返回 6 类传感器实时值；history 返回近24h 聚合点（InfluxDB）；health/weather 正常
+- ✅ Vite HMR 无编译错误
+- ✅ 根因确认：`SensorCards` 期望扁平字段、接口返回 `dataByType`，为 G01 遗留的接口契约不一致
+- ⚠️ 浏览器自动化验证因环境 headless Edge 不稳定（进程挂起）而中断，已清理测试进程；待用户在浏览器中最终确认显示效果
+
+### 说明
+- 本轮未推送 GitHub（用户指示暂缓推送）
+- 待用户浏览器确认棚主端卡片/趋势图正常后，可连同上一轮 R20 一并推送
