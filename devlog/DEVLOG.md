@@ -3347,3 +3347,31 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 启动后端时曾遇 `PasswordPolicy NoClassDefFoundError`：根因是 common 模块未安装到本地 Maven 仓库，`spring-boot:run -pl backend` 使用了旧 common jar；已执行 `mvn install -pl common` 修复（start_all 后续启动需保证 common 已安装）
 - 待确认：是否推送本轮提交到 GitHub
+
+## 步骤83 — AI 问答修复：清除向量库孤儿数据 + 前端超时 + 相似度阈值兜底（R17）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户反馈 AI 问答页面报"网络问题没有回答"，且回答内容答非所问（围绕小说内容作答）。经排查定位两个根因：
+  1. **前端超时过短**：axios 全局超时仅 15 秒（web/src/utils/request.js），而 DeepSeek 生成后端读超时为 60 秒（RagQaService/DeepSeekLlmProvider）。DeepSeek 高峰期响应 20-60 秒时，浏览器 15 秒先断开，前端误报"网络异常"。
+  2. **向量库被孤儿数据污染**：Chroma 集合 greenhouse_knowledge 共 1472 个分块，其中 **1465 个（99.5%）是已删除小说文档 "00909"（doc_id=13）的残留向量**（历史删除时未同步清理，MySQL 记录已无）；另有 doc_id=16（ID复用测试文档）1 块孤儿数据；真实农业文档仅 6 块（doc 6/7/14/15）。RAG 检索 top-5 几乎必然命中小说分块，DeepSeek 被引导围绕小说内容回答。
+
+### 改动清单
+1. **清理 Chroma 孤儿向量**（数据修复，不改代码）：按 `where: {doc_id: 13}` 删除 1465 块小说分块、按 `where: {doc_id: 16}` 删除 1 块测试分块；向量库 1472 → 6 块（番茄种植技术指南×2、常见病虫害防治手册×2、大棚黄瓜栽培技术×1、异步上传测试×1）
+2. **前端 QA 专用超时**（web/src/api/qa.js）：`askText`/`askVoice` 单独设置 `timeout: 120000`（2 分钟），不再受全局 15 秒限制；新增注释说明原因
+3. **后端 RAG 相似度阈值兜底**（backend/.../qa/service/ChromaRetrievalService.java）：新增 `minSimilarity`（配置项 `greenhouse.ai.rag.min-similarity`，默认 0.3），检索结果低于阈值的视为不相关内容并过滤；全部被过滤时 RagQaService 降级为纯通用农业知识回答（原有降级链路）；`application-dev.yml` 新增配置项及说明
+4. 后端重启加载新代码与配置（注入 .env.local 真实 Key，LLM=deepseek、Embedding=siliconflow）
+
+### 验证（实测）
+- ✅ 后端接口实测（admin 登录后提问）：
+  - "番茄常见病害有哪些？怎么防治？" → 回答专业，引用来源为【常见病虫害防治手册 / 番茄种植技术指南】（不再有小说）
+  - "温室大棚黄瓜的水肥管理要点是什么？" → 回答专业，引用【大棚黄瓜栽培技术.txt】等
+  - "帮我写一首关于春天的诗"（非农）→ 农业域守卫拦截，明确拒绝并引导回农业话题
+- ✅ 单次回答耗时约 3-5 秒（正常范围）
+- ✅ 通过 Web 代理路径（localhost:3000 → 8080）问答正常
+- ✅ Vite 热更新无编译错误（hmr update QaPage.vue）
+
+### 说明
+- 知识库删除文档的代码路径（KnowledgeService.deleteDocument → deleteFromChroma）已包含向量清理逻辑，本次清理的是该逻辑上线前的历史遗留孤儿数据；相似度阈值作为兜底机制防止未来低相关分块污染 LLM 上下文
+- 阈值默认 0.3 为保守值，可按实际检索效果在 application-dev.yml 调整
+- 待确认：是否推送本轮提交到 GitHub
