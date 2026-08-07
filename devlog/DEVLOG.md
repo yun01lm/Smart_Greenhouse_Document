@@ -3456,3 +3456,26 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 和风免费开发版仅支持当前天气 + 3 天预报；GeoAPI 走专属域名路径 `/geo/v2/city/lookup` 正常
 - 待确认：是否修复上述 3 个问题 + 是否推送本轮提交
+
+## 步骤87 — 天气缓存修复：类型隔离 + 字段补全 + 前端字段修正（R19 收尾）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：真实天气接入验证中发现 3 个问题：①当前天气与预报共用 weather_cache.location 键互相覆盖（先查预报后查当前会返回预报首日数据）；②缓存实体未存 weatherText/feelsLike/pressure/visibility，缓存命中时字段为 null；③AdminDashboard.vue 用 `weather.weather || weather.description` 取值，实际字段为 `weatherText`，天气描述永远无法显示。
+
+### 改动清单
+1. `WeatherCache.java`：新增 `cacheType` 字段（CURRENT/FORECAST）区分当前与预报缓存；新增 `feelsLike/weatherText/windDirection/pressure/visibility` 字段；索引改为 (location, cache_type, updated_at)
+2. `WeatherCacheRepository.java`：查询方法改为 `findTopByLocationAndCacheTypeOrderByUpdatedAtDesc(location, cacheType)`
+3. `QWeatherService.java`：新增 CACHE_TYPE_CURRENT/FORECAST 常量；当前天气与预报分别读写各自类型缓存；saveWeatherCache 扩展完整字段参数（temp/feelsLike/humidity/weatherCode/weatherText/windDirection/windSpeed/pressure/visibility）；fetchForecast 用预报首日 textDay/windDirDay 写入 FORECAST 缓存；buildCurrentFromCache 补全字段
+4. `WeatherRiskCalculator.java`：天气风险计算改按 CURRENT 类型读取缓存
+5. `AdminDashboard.vue`：天气描述字段改为 `weather.weatherText`
+
+### 验证（实测）
+- ✅ 先查预报（雷阵雨）再查当前天气：返回 35°C/晴/湿度54/东风23（预报未污染当前，缓存隔离生效）
+- ✅ 缓存命中时字段完整：weatherText=晴、feelsLike=36、humidity=54、pressure=1004、vis=20
+- ✅ 管理员数据总览天气：北京 35°C 晴 湿度54% 东风23（前端 weatherText 正常显示）
+- ✅ `mvn compile` 通过；weather_cache 旧缓存已清空（cacheType 为空的旧记录自动失效）
+
+### 说明
+- weather_cache 为纯缓存，清空后自动重建；旧记录（无 cacheType）不会被新查询命中
+- 待确认：是否推送本轮提交到 GitHub
