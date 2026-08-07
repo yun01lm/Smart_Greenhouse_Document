@@ -3647,3 +3647,39 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 专家端入口（专家工作台扩展/实时聊天）按用户指示暂缓，待棚主端功能完成后另行讨论
 - 本轮未推送 GitHub（用户指示暂缓推送）
+
+## 步骤94 — Android 端棚主员工管理（R26）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户确认「员工管理」入口在棚主 APP 端（Q3）。R23 后端员工管理接口与 R24 Web 页就绪后，补齐 Android 端：棚主在个人中心进入「员工管理」，可查看名下员工（普通员工/技术员）、新增员工（创建/邀请双模式）、设置权限、重置密码、移除员工。
+
+### 改动清单
+1. 数据模型（`data/model/`）
+   - 新增 `EmployeeItem`（id/username/realName/phone/role/createdAt）
+   - 新增 `AddEmployeeRequest`（双模式：identifier 邀请 / username+realName+phone+password+roleType 创建 + greenhouseId）
+   - 新增 `EmployeePermissionItem`（大棚 6 项功能权限）、`UpdatePermissionRequest`、`ResetPasswordRequest`
+2. API 接口（`GreenhouseApiService.java`）
+   - `GET owner/employees`、`POST owner/employees`、`PUT owner/employees/{id}/password`、`GET/PUT owner/employees/{id}/permissions`、`DELETE owner/employees/{id}`
+3. 数据仓库（`EmployeeRepository.java`）：封装列表/新增/重置密码/权限查询与更新/移除，统一 BaseRepository 后台线程 + 主线程回调
+4. ViewModel（`EmployeeViewModel.java`）：`loadEmployees/addEmployee/resetPassword/loadPermissions/savePermissions/removeEmployee`，业务逻辑全在 ViewModel
+5. 适配器（`EmployeeAdapter.java`）：员工行展示姓名/用户名/类型标签/手机号 + 权限/重置密码/移除操作回调
+6. 页面（`ui/employee/EmployeeManagementActivity.java` + 布局）
+   - `activity_employee_management.xml`：工具栏 + 员工列表 + 空态 + 进度条 + 新增按钮
+   - `item_employee.xml`：员工卡片行
+   - 新增员工对话框：创建账号 / 邀请已有账号 双模式切换（RadioGroup），员工类型（普通员工/技术员）、授权大棚下拉选择
+   - 权限设置对话框：按大棚勾选 6 项权限，循环提交保存
+   - 重置密码 / 移除确认对话框
+7. 入口与注册
+   - `fragment_profile.xml` 新增「员工管理」按钮（棚主专属，非棚主隐藏）；`ProfileFragment.java` 接线跳转
+   - `AndroidManifest.xml` 注册 `EmployeeManagementActivity`
+
+### 验证
+- ✅ 后端接口已在 R23 实测通过（创建技术员/重置密码/权限列表/移除员工）
+- ✅ 静态审查通过（模型字段与后端响应对齐、ViewBinding ID 与布局一致、生命周期/回调模式与既有页面一致）
+- ⚠️ 本环境无 Android SDK，无法 Gradle 编译；需用户在 Android Studio 中编译运行验证
+
+### 说明
+- 技术员默认权限全开（APP 端 RoleAdapter 已支持），后端仍按权限表强制校验
+- 专家端实时聊天（R25）按用户指示暂缓，待棚主端功能完成后另行讨论
+- 本轮未推送 GitHub（用户指示暂缓推送）

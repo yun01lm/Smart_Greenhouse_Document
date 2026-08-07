@@ -239,3 +239,13 @@ Authorization: Bearer <token>
 - 新增 `PUT /api/v1/owner/employees/{employeeId}/password` — 棚主重置/初始化员工密码（新密码 >=8位且含字母和数字）
 - 新增 `TECHNICIAN` 角色：可登录 Web+APP，默认权限全部开放但可被棚主收紧，后端按权限表强制校验
 - 相关文件：`PermissionController` / `PermissionService` / `AddEmployeeRequest` / `ResetEmployeePasswordRequest` / `EmployeeResponse` / `User.Role`
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤94：Android 端棚主员工管理）
+
+- Android 端实现员工管理全流程：棚主个人中心「员工管理」入口（仅棚主可见）
+- 复用后端接口：`GET/POST /owner/employees`、`PUT /owner/employees/{id}/password`、`GET/PUT /owner/employees/{id}/permissions`、`DELETE /owner/employees/{id}`
+- 新增文件：`EmployeeItem/AddEmployeeRequest/EmployeePermissionItem/UpdatePermissionRequest/ResetPasswordRequest`（模型）、`EmployeeRepository`（仓库）、`EmployeeViewModel`（VM）、`EmployeeAdapter`（列表）、`EmployeeManagementActivity`（页面）
+- 功能：员工列表（类型标签）、新增员工（创建/邀请双模式 + 授权大棚）、权限设置（按大棚 6 项权限勾选）、重置密码、移除员工（二次确认）
+- 技术员默认权限全开；普通员工默认「看数据+控设备+看预警」；权限变更由棚主在 APP/Web 端操作，后端权限表强制校验
