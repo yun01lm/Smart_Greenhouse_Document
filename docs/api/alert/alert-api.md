@@ -176,3 +176,13 @@ Content-Type: application/json
 - `greenhouseId` 改为可选参数
 - 权限收口：返回结果限定为当前用户可见大棚（OWNER 自己名下大棚 / WORKER 被授权大棚；greenhouseId 缺省时返回全部可见大棚的规则）
 - 显式传 `greenhouseId` 时后端校验归属，无权限返回 403（3002 无该大棚访问权限）
+
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤91：预警处理状态）
+
+- `Alert` 实体新增 `handled` 字段（已处理/未处理，bit(1)，默认 0）
+- `AlertResponse` 新增字段 `handled`（Boolean）
+- 新增接口 `PUT /api/v1/alerts/{id}/handle`：标记预警为已处理（同时置为已读），返回 message「已标记为已处理」
+- 前端预警列表（AlertList）新增“已处理/未处理”标签与“处理”按钮；处理成功后本地即时更新

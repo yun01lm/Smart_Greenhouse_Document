@@ -3549,3 +3549,28 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 本轮未推送 GitHub（用户指示暂缓推送）
 - 待用户浏览器确认棚主端卡片/趋势图正常后，可连同上一轮 R20 一并推送
+## 步骤91 — 预警“处理”功能（已处理/未处理 + 处理按钮）（R22）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户要求预警增加“处理”功能，展示已处理/未处理状态并提供处理按钮。此前预警仅有已读/未读，无法表达“问题已处置”。
+
+### 改动清单
+1. 后端
+   - `Alert.java`：新增 `handled` 字段（@Builder.Default=false），Hibernate ddl-auto 自动加列 `handled bit(1) NOT NULL`（已有数据自动填 0）
+   - `AlertResponse.java`：响应新增 `handled` 字段（fromEntity 带上）
+   - `AlertService.java`：新增 `markAsHandled()`（置 handled=true，同时置 readStatus=true）
+   - `AlertController.java`：新增 `PUT /api/v1/alerts/{id}/handle`
+2. 前端
+   - `web/src/api/alert.js`：新增 `markAlertHandled(id)`
+   - `web/src/views/dashboard/AlertList.vue`：每条预警右侧显示状态标签（未处理=黄色/已处理=绿色），未处理时显示“处理”按钮（带 loading，成功后即时更新），已处理整条半透明淡化
+
+### 验证
+- ✅ `handled` 列自动创建（bit(1) NOT NULL）
+- ✅ `PUT /alerts/8/handle` 实测：返回“已标记为已处理”，列表 handled=true、read=true
+- ✅ 列表接口返回 handled 字段；前端 AlertList.vue / alert.js 经 Vite 编译 HTTP 200
+- ✅ 已确认：管理端数据总览最新预警为 el-table 展示，本轮未加处理按钮（后续如需再补）
+
+### 说明
+- 模拟预警数据（6条，步骤89后补插）保留在库中供演示
+- 本轮未推送 GitHub（用户指示暂缓推送）
