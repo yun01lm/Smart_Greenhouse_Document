@@ -3375,3 +3375,35 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 知识库删除文档的代码路径（KnowledgeService.deleteDocument → deleteFromChroma）已包含向量清理逻辑，本次清理的是该逻辑上线前的历史遗留孤儿数据；相似度阈值作为兜底机制防止未来低相关分块污染 LLM 上下文
 - 阈值默认 0.3 为保守值，可按实际检索效果在 application-dev.yml 调整
 - 待确认：是否推送本轮提交到 GitHub
+
+## 步骤84 — AI 问答历史记录：默认加载30条 + 按日期查询（R18）
+
+- **操作时间**：2026-08-07
+- **状态**：✅ 完成
+- **背景**：用户反馈 AI 问答的历史记录每次刷新页面后消失。经排查：后端 qa_records 表本身已持久化每条问答（问题/回答/来源/时间），`GET /api/v1/qa/records` 接口也已存在，但前端 QaPage.vue 从未调用该接口（聊天窗口每次进入为空数组）；且接口无按日期过滤能力，历史项只返回问题摘要（50字截断）、不含回答内容，无法恢复完整对话。需求：历史记录保存并展示、支持按日期查询、所有用户可用。
+
+### 后端改动
+- `QaRecordRepository`：新增 `findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc`（按用户 + 创建时间范围 [当天00:00, 次日00:00) 分页倒序）
+- `QaController.records`（GET /api/v1/qa/records）：
+  - 新增可选参数 `date`（yyyy-MM-dd，@DateTimeFormat 校验）：传值则查当天记录，不传查全部
+  - `page` 改为从 1 开始（原为 Spring Data 0 基）、默认 `size=30`、上限 100
+- `QaHistoryItem`：补充返回完整 `answer`（回答内容）与 `sources`（引用来源，由 JSON 解析为结构化数组），前端可恢复完整对话
+
+### 前端改动
+- `api/qa.js`：`getRecords(page, size, date)` 支持日期参数
+- `views/qa/QaPage.vue`（重构为按日期分组）：
+  - 进入页面自动加载**最近 30 条**历史，按日期分组显示：今天 / 昨天 / 今年"M月D日" / 往年"YYYY年M月D日"
+  - 每条消息显示时间戳：今天只显示 HH:mm；今年显示 MM-DD HH:mm；往年显示 YYYY-MM-DD HH:mm
+  - 头部新增日期选择器：选日期 → 查询当天记录；"显示最近"清空筛选
+  - 语音记录显示"🎤 语音输入"标记；发送新消息自动归入"今天"分组并滚动到底部
+
+### 验证（实测）
+- ✅ 后端接口实测（admin 登录）：无 date → total=33、page=1（从1开始）、列表含完整 answer 与 sources；`date=2026-08-07` → 9 条当天记录；`date=2020-01-01` → 0 条
+- ✅ 通过 Web 代理路径（localhost:3000 → 8080）records 正常
+- ✅ Vite 热更新无编译错误（QaPage.vue 12:03 hmr update）
+
+### 说明
+- **语音记录存储方式**：语音先 ASR 识别，识别文字存入 `qa_records.question`；原始音频经 `FileService.saveAudioFile` 存至 `uploads/audio/年月日/`，但记录表未关联音频路径，历史记录仅能查看识别文字，不能回放原音频（如需回放需后续加字段）
+- **所有用户生效**：接口按登录用户隔离（userId 过滤），每个用户看到自己的历史
+- **排查经验**：重启后端时 `Get-NetTCPConnection -LocalPort 8080` 与 `netstat` 结果不一致（前者漏报监听）导致旧进程未被杀、新后端端口占用失败；已改用 netstat 精确定位 PID 解决，后续重启后端应以 netstat 为准
+- 待确认：是否推送本轮提交到 GitHub
