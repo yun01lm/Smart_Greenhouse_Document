@@ -192,3 +192,12 @@ Authorization: Bearer <token>
 | 3002 | 403 | 无该大棚访问权限 |
 | 3004 | 403 | 仅棚主可执行此操作 |
 | 1001 | 400 | 参数错误 |
+
+---
+
+## 变更记录（追加，2026-08-08 · 步骤100：专家权限申请/审批闭环 R28）
+
+- 新增 `GET /api/v1/expert/authorize/available`（仅 EXPERT）：返回全部大棚及棚主信息，附带当前专家授权状态（NONE / PENDING / APPROVED；已过期按 NONE 处理），用于专家端"申请大棚权限"选择
+- 新增 `GET /api/v1/expert/authorize/my`（仅 EXPERT）：返回专家自己的全部申请记录（待审批/已授权/已拒绝/已撤销/已过期）
+- `POST /api/v1/expert/authorize/request` 增强：校验目标用户必须是大棚所有者（否则 1001 参数错误）；已有 APPROVED 或 PENDING 申请时返回 6007，不可重复申请；REJECTED / REVOKED / EXPIRED 后可重新申请
+- 前端：专家数据总览新增申请入口与申请记录；棚主端新增"授权审批"页面（待处理同意/拒绝、已授权撤销）

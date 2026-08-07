@@ -3823,3 +3823,41 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 后端推送双方的设计保留（用于对方实时接收），仅前端发送侧做幂等去重，改动最小
 - 本轮未推送 GitHub（按提交策略本地提交）
+## 步骤100 — 专家会话已读 + 大棚权限申请/审批闭环（R28）
+
+- **操作时间**：2026-08-08
+- **状态**：✅ 完成
+- **背景**：用户反馈两个问题：①咨询会话刷新按钮上的未读数（如"3"）永远不消失；②专家无法通过界面申请大棚数据权限。修复/实现方案经用户确认后执行。
+
+### 改动清单
+1. 后端 — 会话已读（角标归零）
+   - `ChatMessageRepository.markAsRead` 补 `@Modifying` 注解（UPDATE 查询必需），参数类型改为枚举 `ChatMessage.SenderType`（原 String 绑定会触发 Hibernate QueryArgumentException 500）
+   - `ChatService.getMessages` 加 `@Transactional`：查看消息后按身份标记对方消息已读（专家→标记 USER 消息；用户→标记 EXPERT 消息），`getMessages` 实测从 500 修复为正常
+2. 后端 — 权限申请/审批
+   - `ExpertService.requestAuthorization` 增强：校验目标用户必须是大棚所有者；已同意或待审批均不可重复申请（PENDING 拦截）
+   - 新增 `ExpertService.getAvailableGreenhouses`：返回全部大棚+棚主+当前专家授权状态（NONE/PENDING/APPROVED，已过期按 NONE 处理）
+   - 新增 `ExpertService.getMyAuthorizations`：专家自己的申请记录（含被拒/撤销/过期）
+   - `DataAuthorizationRepository` 新增 `findByExpertIdOrderByRequestedAtDesc`
+   - `AuthorizationController` 新增 `GET /api/v1/expert/authorize/available` 与 `GET /api/v1/expert/authorize/my`
+3. Web 端 — 专家申请入口
+   - `api/expert.js` 新增专家/棚主授权 API（available/my/request/pending/approve/reject/active/revoke）
+   - `DashboardPage.vue`：专家数据总览新增「申请大棚权限」按钮与「我的申请」弹窗；未授权空白页显示申请引导+申请记录表格；申请成功后刷新授权大棚与记录
+   - `ExpertChat.vue`：打开会话加载消息后刷新未读数与列表角标（配合后端已读）
+4. Web 端 — 棚主授权审批
+   - 新建 `AuthorizationPage.vue`：待处理申请（同意/拒绝）+ 已授权大棚（撤销），均带确认框
+   - `MainLayout.vue` OWNER 菜单新增「授权审批」；`router/index.js` 新增 `/authorizations` 路由（仅 OWNER）
+
+### 验证
+- ✅ 后端 `mvn package` 成功；前端 `vite build` 成功
+- ✅ 8081 临时实例实测（不影响用户 8080 环境）：
+  - 专家 `GET /expert/authorize/available` 返回全部大棚及状态；`GET /expert/authorize/my` 返回申请记录
+  - 专家申请 → 重复申请被拦截（400）→ 棚主 `GET /authorize/pending` 可见 → `approve` 成功（7 天有效期）→ 专家大棚列表立即可见新授权
+  - 中文申请理由 UTF-8 正常存取（用 UTF-8 文件方式发送验证）
+  - 未读数：专家/棚主加载会话消息后 unread 从 3 → 0
+- ✅ 测试数据已清理（仅保留原有授权记录 id=1），临时实例已停止
+
+### 说明
+- 会话已读按"查看即读"处理（专家/用户打开会话即标记对方消息已读），未读数实时刷新
+- 授权状态：PENDING 不可重复申请，REJECTED/REVOKED/EXPIRED 可重新申请
+- ChatService.java 本次提交包含行尾符规范化（CRLF→LF，一次性）
+- 本轮未推送 GitHub（按提交策略本地提交）

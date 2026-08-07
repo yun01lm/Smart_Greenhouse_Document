@@ -267,3 +267,10 @@ Authorization: Bearer <token>
 - 问题：`POST /api/v1/chat/messages` 发送成功后，WebSocket 会将该消息推送给对话双方（含发送者自己），前端 REST 响应与 WS 推送都可能追加同一条消息，导致发送者看到两条一样的内容
 - 修复：专家端 `ExpertChat.vue` 的 `doSend()` 在追加消息前按 `id` 去重（WS 与 REST 谁先到达只渲染一次）；`onWsMessage()` 原有 id 去重保留
 - 影响面：仅前端展示逻辑，接口与数据存储不变；对方仍通过 WS 实时收到消息
+---
+
+## 变更记录（追加，2026-08-08 · 步骤100：会话已读 R28）
+
+- 修复：`GET /api/v1/chat/conversations/{id}/messages` 查看消息后，后端按当前身份自动标记对方消息已读（专家查看→用户消息已读；用户查看→专家消息已读），未读数 `GET /api/v1/chat/unread` 随之归零
+- 修复：`ChatMessageRepository.markAsRead` 补 `@Modifying`、参数类型改为枚举，修复原实现会抛 500 的问题
+- 说明：会话消息接口与数据结构不变，仅新增已读标记副作用
