@@ -278,3 +278,11 @@ Authorization: Bearer <token>
 - `POST /api/v1/admin/users` — 新增用户：初始密码统一 123456；ADMIN 角色最多 3 个；员工必选归属棚主；用户名/手机号唯一性校验
 - `PUT /api/v1/admin/users/{userId}/password` — 管理员重置密码：需验证该用户当前绑定手机号一致；新密码 >=8位且包含字母和数字
 - 相关文件：`AdminController` / `AdminService` / `CreateUserRequest` / `AdminResetPasswordRequest` / `common/PasswordPolicy`
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤89：数据总览天气跟随查询地区）
+
+- `GET /api/v1/admin/dashboard/overview` — 天气查询位置逻辑调整：选择具体地区时按「城市优先、省级次之」查询（不再传村/乡镇名，村级地名和风 GeoAPI 无法解析）；不传地区参数（全部地区）时跟随大棚最集中的城市（大棚数最多，同数取最早登记城市），不再默认北京
+- 修复：所选地区大棚无传感器数据时，环境聚合 `Map.of("avg", null)` 抛 NPE 导致接口 500（`buildEnv` 改为 LinkedHashMap）
+- 相关文件：`AdminDashboardService.java`（buildWeather / dominantGreenhouseCity / buildEnv）

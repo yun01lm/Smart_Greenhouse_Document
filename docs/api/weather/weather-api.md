@@ -117,3 +117,11 @@ Authorization: Bearer <token>
 | 3002 | 403 | 无该大棚访问权限 |
 | 1003 | 500 | 天气服务暂时不可用 |
 | 1001 | 400 | 参数错误 |
+
+---
+
+## 变更记录（追加，2026-08-07 · 步骤89：天气查询位置策略）
+
+- 管理员数据总览的天气查询不再默认北京：全部地区时跟随大棚最集中的城市；具体地区时按城市（优先）/省份（次之）查询，村、乡镇等更细粒度地名不直接传给和风 GeoAPI（村级无法解析，会降级失败）
+- 天气卡片 `weather.location` 字段标注实际查询的城市，与所选地区层级（province→city→district→town→village）解耦展示
+- 相关文件：`AdminDashboardService.java`（buildWeather / dominantGreenhouseCity）
