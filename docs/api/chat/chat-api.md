@@ -251,3 +251,12 @@ Authorization: Bearer <token>
 - `POST /api/v1/chat/messages` 发送成功后，后端通过 STOMP `convertAndSendToUser` 推送到对话双方（订阅地址 `/user/queue/chat`）
 - 前端专家端 `ExpertChat.vue` 订阅实时消息，并保留 30 秒 REST 轮询作为兜底（推送失败自动降级）
 - 推送为尽力而为（异常仅告警），不影响消息持久化与 REST 查询
+
+---
+
+## 变更记录（追加，2026-08-08 · 步骤98：会话重新开启 R27.1）
+
+- 新增接口 `PUT /api/v1/chat/conversations/{id}/reopen`
+- 功能：将已关闭（CLOSED）的会话重新开启为进行中（ACTIVE），并清空关闭时间 `closedAt`，双方可继续沟通
+- 权限：仅会话参与者（用户或专家）可操作；非参与者返回 `3002 ACCESS_DENIED`，非 CLOSED 状态返回 `1001 PARAM_ERROR`（提示「仅已关闭的会话可以重新开启」）
+- 前端：专家端 `ExpertChat.vue` 在会话状态为 CLOSED 时显示「重新开启」按钮，操作成功后刷新会话列表与消息

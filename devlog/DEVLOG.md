@@ -3780,3 +3780,27 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 聊天实时推送为「WebSocket + 30s 轮询」双通道，推送失败自动降级轮询
 - 测试产生的乱码会话数据已清理（保留正常中文测试会话）
 - 本轮未推送 GitHub
+
+## 步骤98 — 会话重新开启功能（R27.1）
+
+- **操作时间**：2026-08-08
+- **状态**：✅ 完成
+- **背景**：用户反馈专家端「与用户会话已关闭」后无法再开启，关闭的会话不可继续沟通，体验不完整。需求：关闭后的会话必须能重新开启继续对话。
+
+### 改动清单
+1. 后端 — 聊天模块
+   - `ChatService.reopenConversation(conversationId, userId)`：新增会话重新开启逻辑（校验参与者身份 → 仅允许 CLOSED 状态会话 → 置为 ACTIVE 并清空 closedAt → 持久化）
+   - `ChatController` 新增 `PUT /api/v1/chat/conversations/{id}/reopen` 接口
+2. Web 端 — 专家端
+   - `api/chat.js` 新增 `reopenConversation(id)` 调用
+   - `ExpertChat.vue`：当前会话状态为 CLOSED 时显示「重新开启」按钮，点击后调用接口并刷新会话列表与消息，成功提示「会话已重新开启，可继续沟通」
+
+### 验证
+- ✅ 后端接口逻辑验证通过：仅已关闭会话可重新开启（非 CLOSED 抛 PARAM_ERROR）、仅会话参与者可操作（非参与者抛 ACCESS_DENIED）
+- ✅ Web 端 Vite 编译通过（ExpertChat.vue / chat.js HTTP 200 + HMR）
+- ✅ 功能闭环：关闭会话 → 出现「重新开启」按钮 → 点击后状态回 ACTIVE、可继续发送消息
+
+### 说明
+- 重新开启后状态置为 ACTIVE（非 WAITING），双方可直接继续沟通
+- 关闭时间 `closedAt` 同步清空，避免历史状态残留
+- 本轮未推送 GitHub（按提交策略本地提交）
