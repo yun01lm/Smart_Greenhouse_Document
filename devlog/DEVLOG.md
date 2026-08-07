@@ -3407,3 +3407,26 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - **所有用户生效**：接口按登录用户隔离（userId 过滤），每个用户看到自己的历史
 - **排查经验**：重启后端时 `Get-NetTCPConnection -LocalPort 8080` 与 `netstat` 结果不一致（前者漏报监听）导致旧进程未被杀、新后端端口占用失败；已改用 netstat 精确定位 PID 解决，后续重启后端应以 netstat 为准
 - 待确认：是否推送本轮提交到 GitHub
+
+## 步骤85 — 真实天气接入（和风天气 API，R19）
+
+- **操作时间**：2026-08-07
+- **状态**：🔄 代码完成，待用户填入 API Key 后验证
+- **背景**：用户要求接入真实天气 API。经调研：后端 QWeatherService 早已实现和风天气真实调用（当前天气 /v7/weather/now、3天预报 /v7/weather/3d、weather_cache 表 3 小时缓存、mock/qweather 切换），但存在 3 个卡点：① `weather.provider` 仍为 mock；② 未配置 `QWEATHER_API_KEY`；③ 和风 v7 天气 API 的 location 参数不支持中文地名（仅 LocationID/经纬度/拼音），而项目各处传入的是中文城市名（大棚登记城市、管理员地区名）。
+
+### 改动清单
+1. `.env.local`（gitignored，不提交）：预留天气配置位——`WEATHER_PROVIDER=qweather` + `QWEATHER_API_KEY=`（待用户填写和风 Key，注册 https://dev.qweather.com 免费开发版）
+2. `QWeatherService.java`：
+   - 新增 `resolveApiLocation(location)`：LocationID（纯数字）或经纬度（含逗号）直接使用；中文地名走 GeoAPI 转换并内存缓存（ConcurrentHashMap）；转换失败降级返回原值
+   - 新增 `lookupLocationId(name)`：调用和风 GeoAPI `GET {baseUrl}/geo/v2/city/lookup?location=中文名&number=1&key=xxx` 取首个 LocationID
+   - 天气 URL 由 `location` 改为 `resolveApiLocation(location)`；缓存键与响应 location 仍保留中文原名（前端展示不变）
+3. `application-dev.yml`：`weather.provider` 改为 `${WEATHER_PROVIDER:mock}`（环境变量注入，默认 mock）
+
+### 验证
+- ✅ `mvn compile` 通过（需提权联网）
+- ⏳ 真实天气链路验证：待用户填入 QWEATHER_API_KEY 后重启后端执行（后端需能访问 devapi.qweather.com）
+
+### 说明
+- 和风免费开发版仅支持当前天气 + 3 天预报，7 天预报需付费订阅（代码已支持 3/7，前端按 3 天使用）
+- GeoAPI 免费开发版路径：`https://devapi.qweather.com/geo/v2/city/lookup`
+- 待确认：是否推送本轮提交到 GitHub
