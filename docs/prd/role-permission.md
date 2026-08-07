@@ -278,3 +278,11 @@ related_docs:
 - 员工创建渠道：棚主直接创建员工账号（自动归属自己名下）并可初始化密码；管理员创建棚主/专家/全部账号并可重置所有人密码
 - 注册关闭：公开注册不再开放，账号只通过管理员/棚主渠道创建
 - 权限模型仍为「角色基础权限 ∩ 大棚授权 ∩ 功能授权」，技术员与普通员工均走 `employee_permissions` 表校验
+
+---
+
+## 变更记录（追加，2026-08-08 · 步骤97：专家授权数据访问 + 知识库只读角色）
+
+- **EXPERT 大棚数据访问**：`GreenhouseService.listGreenhouses` 仅返回授权（APPROVED + 未过期）大棚；传感器/健康/预警/天气接口统一走 `@RequireGreenhouseAccess`（EXPERT 校验 data_authorizations）
+- **知识库只读**：GET 接口开放给 ADMIN/OWNER/TECHNICIAN/EXPERT，写操作仅 ADMIN
+- **专家在线**：登录自动置在线、登出置离线（R9 实现，R27 验证）

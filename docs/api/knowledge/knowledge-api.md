@@ -266,3 +266,11 @@ Content-Type: application/json
 - 新增表 `knowledge_document_id_recycle`（recycled_id 主键 / created_at）
 - 新增表 `knowledge_document_id_seq`（next_id，当前 16）
 - `knowledge_documents.id` 由自增改为服务层显式分配（实体去掉 @GeneratedValue）
+
+---
+
+## 变更记录（追加，2026-08-08 · 步骤97：知识库只读开放 + 文档内容预览）
+
+- **阅读权限**：`GET /api/v1/knowledge/**` 放行 ADMIN/OWNER/TECHNICIAN/EXPERT；上传/删除/编辑/向量化/问答测试等写操作仍仅 ADMIN
+- **新增接口**：`GET /api/v1/knowledge/documents/{id}/content` — 返回文档原文件内容（text/plain 内联；pdf 返回 application/pdf），供只读角色查阅
+- **前端**：KnowledgePage 非管理员为只读模式（隐藏写操作按钮），新增「查看」按钮弹出内容预览对话框

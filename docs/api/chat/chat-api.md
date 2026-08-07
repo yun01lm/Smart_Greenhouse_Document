@@ -243,3 +243,11 @@ Authorization: Bearer <token>
 | 6004 | 400 | 对话已结束 |
 | 3002 | 403 | 无该大棚访问权限 |
 | 1001 | 400 | 参数错误 |
+
+---
+
+## 变更记录（追加，2026-08-08 · 步骤97：聊天消息 WebSocket 实时推送）
+
+- `POST /api/v1/chat/messages` 发送成功后，后端通过 STOMP `convertAndSendToUser` 推送到对话双方（订阅地址 `/user/queue/chat`）
+- 前端专家端 `ExpertChat.vue` 订阅实时消息，并保留 30 秒 REST 轮询作为兜底（推送失败自动降级）
+- 推送为尽力而为（异常仅告警），不影响消息持久化与 REST 查询

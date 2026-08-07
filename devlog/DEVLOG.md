@@ -3740,3 +3740,43 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 预测为统计外推（Phase 1），后续 LSTM 训练完成后只需替换 `TrendPredictor` 实现，前端零改动
 - 模拟数据波动极小时预测线接近平直属正常现象（无趋势可外推）
 - 本轮未推送 GitHub
+
+## 步骤97 — 专家端完善：咨询会话/知识库只读/授权数据总览（R27）
+
+- **操作时间**：2026-08-08
+- **状态**：✅ 完成
+- **背景**：用户提出专家端三个问题：①专家未授权时数据总览应为空白；②缺少专家与用户沟通咨询的功能（专家在 Web 端回复用户求助）；③专家可查阅知识库资料（棚主/技术员/专家只读），并确认专家登录自动在线、授权后数据总览完整展示且可看历史数据。
+
+### 改动清单
+1. 后端 — 专家授权数据
+   - `GreenhouseService.listGreenhouses` 新增 EXPERT 分支：仅返回「APPROVED 且未过期」的授权大棚；`GreenhouseResponse` 新增 `ownerName`（棚主姓名），供前端按 省→市→县→乡镇→村→棚主→大棚 级联分组
+   - 数据越权修复：`SensorController`（realtime/history/forecast/aggregate/export）、`HealthController`（score/history）、`AlertController`（list/unread-count）、`WeatherController`（current）补 `@RequireGreenhouseAccess`；`PermissionAspect` 增加「greenhouseId 参数显式为 null（如天气仅按 location 查询）时跳过校验」逻辑
+2. 后端 — 知识库只读
+   - `SecurityConfig`：`GET /api/v1/knowledge/**` 放行 ADMIN/OWNER/TECHNICIAN/EXPERT，写操作仍仅 ADMIN
+   - 新增 `GET /api/v1/knowledge/documents/{id}/content` 文档内容预览（读取原文件，text/plain 内联返回）
+3. 后端 — 聊天实时推送 + 在线状态
+   - `ChatService.sendMessage` 成功后经 `SimpMessagingTemplate.convertAndSendToUser` 推送到对话双方（`/user/queue/chat`），失败仅告警不影响主流程
+   - 专家登录自动在线/登出置离线：确认 R9 已实现（AuthService.login/logout），本轮验证生效（DB expert_availability.is_online=1）
+4. Web 端 — 专家数据总览
+   - `DashboardPage.vue`：专家模式加载授权大棚 → 地区级联选择器（默认选第一个授权大棚）；无授权整页空白（无卡片、无模拟曲线）；`TrendChart` 新增 `allow-mock` 开关（专家关闭）
+   - 历史数据：趋势图上方新增时间范围切换（近24小时/近7天/近30天，interval 1h/6h/1d 自适应），全角色可用
+   - `MainLayout`：专家隐藏全局大棚下拉（改用数据总览页级联）；EXPERT 菜单新增「咨询会话」「知识库」；OWNER/TECHNICIAN 菜单新增「知识库」
+5. Web 端 — 专家咨询会话（新）
+   - `ExpertChat.vue`：会话列表（等待中/进行中/已关闭 + 未读角标 + 状态筛选 + 分页）→ 聊天窗口（历史消息、文字回复、环境快照卡片、关闭会话）；`chatSocket.js` 订阅 `/user/queue/chat` 实时收消息 + 30s 轮询兜底
+   - `api/chat.js` 专家端聊天 API；`SnapshotCard.vue` 环境快照展示
+6. Web 端 — 知识库只读
+   - `KnowledgePage.vue`：非管理员只读模式（隐藏上传/删除/编辑/向量化重试/问答测试），新增「查看」按钮打开文档内容预览对话框；`api/knowledge.js` 新增 `getDocumentContent`
+
+### 验证
+- ✅ `mvn compile` 通过，后端重启生效（8080）
+- ✅ 实测：专家未授权 `GET /greenhouses` 返回空、访问传感器数据被拦截（HTTP 400 业务拒绝）；授权（专家发起→棚主同意）后大棚列表返回「一号番茄大棚/张棚主/河北省石家庄市」，realtime/forecast 均 200
+- ✅ 知识库：专家/棚主 `GET /documents`、`GET /categories` 200；内容预览接口返回文档正文
+- ✅ 聊天：棚主创建会话 → 专家会话列表可见 → 专家回复成功（senderType=EXPERT，会话转 ACTIVE）
+- ✅ 回归：棚主/管理员传感器、预警、健康、天气(location-only)、大棚列表均正常
+- ✅ Web Vite 编译通过（ExpertChat/SnapshotCard/KnowledgePage/DashboardPage/TrendChart/MainLayout/router/chatSocket/api 均 200）
+- ⚠️ 聊天 WebSocket 推送与页面最终显示效果需用户在浏览器实测（本环境无法直接查看渲染画面）
+
+### 说明
+- 聊天实时推送为「WebSocket + 30s 轮询」双通道，推送失败自动降级轮询
+- 测试产生的乱码会话数据已清理（保留正常中文测试会话）
+- 本轮未推送 GitHub
