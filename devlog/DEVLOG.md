@@ -4061,3 +4061,41 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 
 ### 说明
 - 本轮未推送 GitHub（按提交策略本地提交，待用户指示推送）
+## 步骤106 — APP 拍照确认崩溃修复 + AI 问答真实化 + 历史记录对齐 Web（APP-C05）
+
+- **操作时间**：2026-08-09
+- **状态**：✅ 完成（编译通过 + 模拟器端到端实测）
+- **背景**：用户反馈①拍照能拍但到「确认照片」阶段崩溃；②AI 问答处于 Mock 模式，需换成真实模式并与 Web 端一致，历史记录也要一致。
+
+### 问题一：拍照确认崩溃（后台线程 setValue）
+- **堆栈**：`IllegalStateException: Cannot invoke setValue on a background thread` → `DiagnosisViewModel.diagnose(DiagnosisViewModel.java:77)`
+- **根因**：`DiagnosisFragment.compressAndDiagnose` 在 `new Thread` 中完成图片压缩后直接调用 `viewModel.diagnose(...)`，而 `diagnose()` 第一行 `isLoading.setValue(true)` 只能主线程调用
+- **修复**：`DiagnosisViewModel.java` 中 `isLoading.setValue(true)` → `isLoading.postValue(true)`（diagnose 与 loadHistoryPage 两处，共 2 处）
+- **验证**：拍照 → 快门 → Done 确认 → 正常进入 DiagnosisResultActivity，无崩溃
+
+### 问题二：AI 问答 Mock → 真实（DeepSeek）
+- **根因**：`backend/src/main/resources/application-dev.yml` 中 `ai.llm.provider: ${AI_LLM_PROVIDER:mock}` 默认 Mock；未加载 `.env.local` 时（如 IDEA 直接启动）即回退 Mock。实测回答带【Mock 回答】前缀
+- **修复**：默认值改为 `${AI_LLM_PROVIDER:deepseek}`（默认真实；API Key 仍从环境变量 `DEEPSEEK_API_KEY` 读取，`.env.local` 已 gitignore，Key 不会入库）
+- **重启**：停止旧后端（PID 31828，Mock 模式）→ 以加载 `.env.local` 环境变量的方式重启（新 PID 44320，`mvn spring-boot:run -pl backend`）
+- **验证**：`POST /api/v1/qa/ask` 回答不再带【Mock 回答】前缀，为 DeepSeek 专业农业回答（早疫病/晚疫病区分与防治），并携带 5 条知识库参考来源（Chroma 检索正常）；APP 端发送问题同样返回真实回答 + 参考来源
+
+### 问题三：APP 问答历史记录对齐 Web
+- **现状**：APP QaFragment 打开时只显示空聊天气泡，从未加载历史
+- **改动**：
+  1. `QaHistoryItem.java`：补 `answer`、`sources` 字段（后端 `GET /api/v1/qa/records` 已返回，APP 模型缺失）
+  2. `QaResponse.java`：补 setter + `fromHistory()` 工厂（恢复历史气泡）
+  3. `QaViewModel.java`：
+     - `PAGE_SIZE` 20 → 30（与 Web 端默认加载最近 30 条一致）
+     - 新增 `loadHistoryIntoMessages()`：打开页面即加载最近 30 条历史并恢复为聊天气泡（用户问题 + AI 回答 + 参考来源 + 语音标签）
+     - `ChatMessage` 增加 `timeText` 字段与历史工厂方法
+     - 新增 `formatMessageTime()`：与 Web 端 `formatTime` 一致——今天只显示 HH:mm；今年显示 MM-DD HH:mm；往年显示 YYYY-MM-DD HH:mm（`ISO_LOCAL_DATE_TIME` 解析，兼容后端 6 位微秒时间戳）
+  4. `ChatAdapter.java`：user/ai 气泡绑定并显示时间文本
+  5. `item_chat_bubble_user.xml` / `item_chat_bubble_ai.xml`：新增 `tv_time` 时间 TextView
+  6. `QaFragment.java`：`onViewCreated` 调用 `viewModel.loadHistoryIntoMessages()`
+- **验证**：AI 智能问答页打开即显示历史（问题/回答/参考来源/时间 23:39、23:34），新问答后时间 23:49 正常显示
+- **说明**：Web 端另有「按日期筛选」工具条，APP 端本次先做到历史加载与时间格式一致，日期筛选 UI 列入后续轮次；历史记录由后端统一存储（APP/Web 共用 `qa_records` 表），天然一致
+- **附带说明**：历史中存在少量乱码记录（??????），为前期 PowerShell 测试请求未按 UTF-8 发送所致，非 APP 缺陷
+
+### 说明
+- 本轮未推送 GitHub（按提交策略本地提交，待用户指示推送）
+- 后端需以加载 `.env.local` 的方式启动才会带上真实 Key；已重启生效（后端 PID 44320）
