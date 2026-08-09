@@ -232,3 +232,22 @@ Authorization: Bearer <token>
 **说明：**
 - 第一阶段为统计外推（最近 12 点线性回归 + 0.9 阻尼 + 传感器范围钳制），对应 PRD US-005 的分阶段实施策略
 - 后续 LSTM 模型训练完成后替换 `TrendPredictor` Provider 实现即可，接口保持不变
+
+---
+
+## 变更记录（R29 — 2026-08-09）
+
+### 1. 历史接口支持日汇总表读取（7天/30天）
+- `POST /api/v1/sensors/history` 新增行为：当请求体 `interval = "1d"` 时，优先读取 MySQL 日汇总表 `sensor_daily_summary`（完整日期），当日与缺日回退 InfluxDB 按天聚合
+- 返回为大棚日粒度均值点：`timestamp` 为当日 00:00（Asia/Shanghai），`value` 为该日各设备日均的再平均；其他 interval（1m/5m/1h/6h）行为不变
+- 前端 7d/30d 范围现使用 `interval="1d"`，24h 仍用 `"1h"`
+
+### 2. sensorType 白名单校验（加固）
+- `GET /sensors/forecast`、`POST /sensors/history`、`POST /sensors/compare`、`GET /sensors/aggregate` 的 `sensorType` 参数增加白名单校验
+- 支持类型（对应 `Device.SensorType`）：`TEMPERATURE`、`HUMIDITY`、`CO2`、`LIGHT`、`SOIL_TEMP`、`SOIL_MOISTURE`、`SOIL_PH`、`WIND_SPEED`
+- 非法类型返回 400（错误码 1001 PARAM_ERROR，消息「不支持的传感器类型: xxx」）
+
+### 3. 新增传感器日汇总表
+- 表 `sensor_daily_summary`：`greenhouse_id`、`device_id`、`sensor_type`、`stat_date`（唯一键四合一）、`avg_value`、`min_value`、`max_value`、`data_count`、`created_at`、`updated_at`
+- 生成：后端定时任务每天 00:05 生成昨日；应用启动自动回填近 30 天（幂等）
+- 说明：本项目实际使用 JPA `ddl-auto=update` 自动建表，未启用 Flyway

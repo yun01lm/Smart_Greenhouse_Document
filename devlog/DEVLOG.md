@@ -3867,3 +3867,44 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - **处理**：按项目规则（管理员可初始化账号密码，初始密码统一 123456），将 `tech01` 密码重置为 123456（复制 owner01 的 BCrypt 哈希）
 - **验证**：`POST /api/v1/auth/login`（tech01/123456）返回 200，角色 TECHNICIAN，可正常登录 Web 端
 - **说明**：登录限流为内存计数（`RateLimitInterceptor`，登录 5 次/分钟/IP、普通 API 60 次/分钟/IP），重启后端即清零；如反复输错触发 429，等待 1 分钟或重启后端即可恢复
+## 步骤101 — 环境趋势图多指标 + X轴随范围 + 传感器日汇总表（R29）
+
+- **操作时间**：2026-08-09
+- **状态**：✅ 完成（代码+构建验证；Docker 运行时验证待用户开启后补充）
+- **背景**：用户反馈数据总览「环境趋势与短期预测」两个问题：①曲线只有温湿度两个指标，没有其他传感器数据，也不能选择只看某一种；②切换「近7天/近30天」后 X 轴仍是 24 小时制（HH:00）格式，数据错乱。用户确认方案：8 种指标全量支持、右上角勾选控件、后端 sensorType 白名单加固、新增 MySQL 日汇总表（日均/min/max/count）供 7天/30天 直接读取。
+
+### 方案讨论结论（用户已确认）
+1. 指标清单：温度/湿度/CO₂/光照/土壤温度/土壤湿度/土壤pH/风速 共 8 种（与后端 `Device.SensorType` 一致；pH、风速模拟器暂无数据，选了为空线）
+2. 历史平均值：选**方案一（MySQL 日汇总表 + 后端定时任务）**，且同时存储 min/max/count；对比了 InfluxDB 降采样任务（方案二，部署链路更长、报表场景不灵活）与暂不加表（方案三，不满足管理报表需求）
+3. 勾选控件放图表卡片右上角；后端加 sensorType 白名单校验（可选加固，用户同意）
+
+### 改动清单
+1. 后端 — 传感器日汇总表（新）
+   - 新建实体 `SensorDailySummary`（`backend/.../entity/SensorDailySummary.java`）：表 `sensor_daily_summary`，唯一键 `(greenhouse_id, device_id, sensor_type, stat_date)`，字段 avg_value/min_value/max_value/data_count；由 JPA ddl-auto=update 自动建表（项目未实际启用 Flyway，设计文档中的迁移脚本为规划）
+   - 新建 `SensorDailySummaryRepository`（按 大棚+类型+日期区间 查询、幂等检查等）
+   - 新建 `SensorDailySummaryService`：`@Scheduled(cron="0 5 0 * * *")` 每天 00:05 生成昨日；`ApplicationReadyEvent` 启动回填近 30 天；用一次 Flux 查询（`option location = {zone: "Asia/Shanghai"}` 保证自然日切分）聚合 mean/min/max/count，幂等（已存在跳过）
+2. 后端 — 历史接口读汇总表 + 当日回退
+   - `SensorDataService.getHistoryData`：`interval == "1d"` 时走 `getDailyHistory`——完整日期读 MySQL 汇总表（按设备日均再取平均），今日与缺日回退 InfluxDB 按天聚合（`queryDailyStatsFromInflux`），最终返回大棚日粒度均值点（时间戳=当日 00:00 Asia/Shanghai）
+   - 其余 interval（1m/5m/1h/6h 等）保持原 InfluxDB 实时聚合路径，其他调用方（报表导出等）不受影响
+3. 后端 — sensorType 白名单加固
+   - `SensorDataService` 新增 `SUPPORTED_SENSOR_TYPES`（取自 `Device.SensorType` 枚举）与 `validateSensorType`，应用于 history/forecast/compare/aggregate 四个入口；未知类型返回 400（PARAM_ERROR）
+4. Web 端 — DashboardPage.vue
+   - 新增 `METRICS` 8 种指标配置（含单位/颜色/模拟基准）；`selectedMetrics` 默认温度+湿度；`TYPE_TO_KEY` 补 soilPh/windSpeed
+   - `RANGE_CONFIG`：7d/30d 聚合间隔改为 `1d`（配合日汇总表）；`loadAll` 按勾选指标并发拉取 history+forecast
+   - `buildHistory/buildForecast` 改为通用多指标合并：24h → `HH:00`；7d/30d → `MM-DD`（修复 X 轴不随范围变化根因：旧代码统一按 `HH:00` 合并 key，30 天数据全部塌缩到同一 key）
+   - 新增 `onMetricsChange`：勾选变化后重新拉取曲线数据
+5. Web 端 — TrendChart.vue（重写）
+   - 右上角指标勾选（`el-checkbox-group`，至少保留 1 项，状态受控于父级）
+   - 动态序列：每个选中指标一条实线历史 + 一条虚线预测；Y 轴按单位分组动态生成（°C/%/ppm/lux/pH/m/s，左右交替+offset，最多 6 轴）
+   - 头部文字随范围动态显示（近24小时/近7天/近30天 · 预测未来2小时）；无数据模拟曲线按范围生成（24h 逐小时、7d/30d 逐日）
+
+### 验证
+- ✅ 后端 `mvn -q compile -pl backend -am` 成功（新增实体/仓库/服务 + SensorDataService 补丁）
+- ✅ 前端 `npm run build` 成功（vite build，无报错）
+- ⏳ Docker 运行时验证待用户开启 Docker 后补充：启动回填近 30 天汇总、7d/30d 历史返回日粒度、24h 返回小时粒度、未知 sensorType 返回 400、勾选/切换范围图表正确
+
+### 说明
+- 汇总表数据为追加式（只写一次不改），漏天/当日通过 InfluxDB 回退兜底，无脏数据风险
+- 7d/30d 显示日平均粒度（用户确认的「每天的数据取平均值进行记录」）；24h 仍为小时粒度
+- 日汇总读取为「大棚日均」= 该日各设备日均的再平均，比旧实现（前端按时间 key 覆盖、实际只显示末个设备值）更正确
+- 本轮未推送 GitHub（按提交策略本地提交，待用户指示推送）

@@ -1134,3 +1134,34 @@ src/main/resources/db/migration/
 5. **禁止在生产环境手动修改数据库数据**
 6. **禁止级联删除（CASCADE）**：所有外键使用 RESTRICT 或 SET NULL
 7. **数据备份**：MySQL 每日 mysqldump，InfluxDB 每日 influx backup，Chroma 持久化卷映射
+
+---
+
+## 表：sensor_daily_summary（传感器日汇总，R29 新增）
+
+**用途**：每天将 InfluxDB 原始传感器数据按「大棚+设备+传感器类型+日期」聚合为日均/最小/最大/条数，供 7天/30天 历史趋势图直接读取，避免实时扫描 InfluxDB 原始数据；同时支撑后续管理员地区总览（区域多棚平均值）、数据导出与长期报表。
+
+**建表方式**：项目当前实际使用 JPA `ddl-auto=update` 自动建表（Flyway 迁移脚本为规划文档，尚未启用）。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT PK AUTO_INCREMENT | 主键 |
+| greenhouse_id | BIGINT NOT NULL | 大棚ID |
+| device_id | BIGINT NOT NULL | 设备ID（按设备维度聚合） |
+| sensor_type | VARCHAR(30) NOT NULL | 传感器类型（TEMPERATURE/HUMIDITY/CO2/LIGHT/SOIL_TEMP/SOIL_MOISTURE/SOIL_PH/WIND_SPEED） |
+| stat_date | DATE NOT NULL | 统计日期（Asia/Shanghai 自然日） |
+| avg_value | DOUBLE | 日均值 |
+| min_value | DOUBLE | 当日最小值 |
+| max_value | DOUBLE | 当日最大值 |
+| data_count | BIGINT | 当日数据条数 |
+| created_at | DATETIME NOT NULL | 创建时间 |
+| updated_at | DATETIME | 更新时间 |
+
+**约束**：唯一键 `uk_gh_dev_type_date (greenhouse_id, device_id, sensor_type, stat_date)`
+
+**生成策略**：
+- 定时任务每天 00:05 生成昨日汇总（`SensorDailySummaryService`）
+- 应用启动时回填近 30 天，幂等（已存在的组合跳过）
+- 数据为追加式（只写一次不改）；当日与缺日由历史接口回退 InfluxDB 按天聚合兜底
+
+**读取**：`POST /api/v1/sensors/history`（interval="1d"）优先读本表，返回大棚日粒度均值（各设备日均的再平均）。
