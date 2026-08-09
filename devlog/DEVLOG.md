@@ -3967,3 +3967,33 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 本 repo 编译环境：JDK17（`E:/JDK17/jdk-17.0.20+8`，写入用户级 gradle.properties）、Gradle 8.5（清华镜像下载到用户 wrapper dists）
 - 本轮未推送 GitHub（按提交策略本地提交，待用户指示推送）
+
+## 步骤103 — 设备控制页对齐后端设备接口（APP-C02）
+
+- **操作时间**：2026-08-09
+- **状态**：✅ 完成（编译通过 + 模拟器端到端实测）
+- **背景**：用户反馈「设备控制页面打开没有东西」。根因：APP 调 `GET /api/v1/devices/actuators`（后端不存在），且控制请求体（actuatorId/greenhouseId）与后端 `ControlRequest{deviceId,action}` 不一致、场景执行请求体多余、场景/控制响应模型与后端 DTO 字段不匹配。以代码为准对齐后端 `DeviceController`/`ControlController`/`SceneController`。
+
+### 改动清单（APP 代码仓库）
+1. `GreenhouseApiService.java`
+   - `getActuators` → `getDevices`：`GET /api/v1/greenhouses/{greenhouseId}/devices?type=CONTROLLER`，返回 `List<DeviceInfo>`
+   - `controlActuator` 返回类型改为 `DeviceControlResult`（后端 `ControlLogResponse`）
+   - `executeScene` 去掉 body，返回 `List<DeviceControlResult>`
+2. 新增模型 `DeviceInfo`（对应后端 `DeviceResponse`：deviceType/status/lastValue/installLocation 等）与 `DeviceControlResult`（对应 `ControlLogResponse`）；`ControlRequest` 重写为 `{deviceId, action}`
+3. `ControlRepository` / `ControlViewModel` / `ControlFragment` / `DeviceAdapter` 改用 `DeviceInfo`：
+   - 控制页只请求 CONTROLLER 类设备
+   - 在线=非 OFFLINE；运行中=`lastValue=="ON"`；图标按设备名关键字推断（泵/风/灯/卷帘/阀）
+   - 控制成功后刷新列表（后端同步更新 lastValue）
+4. `SceneInfo` 对齐后端 `SceneResponse`：`actions`（deviceId/deviceName/action），摘要由“开启/关闭 + 设备名”生成
+5. 删除废弃模型 `ActuatorInfo` / `ControlResponse` / `SceneExecuteRequest`
+
+### 验证（模拟器 emulator-5554 实测）
+- ✅ `:app:compileDebugJavaWithJavac` / `:app:assembleDebug` BUILD SUCCESSFUL
+- ✅ 安装新 APK 后进入「设备控制」：显示「1号水泵控制器」「1号风机控制器」（后端 `devices?type=CONTROLLER` 返回 2 台，均 ONLINE）
+- ✅ 点击水泵开关 → 后端 `POST /control/actuator` 成功（MQTT 发布 + lastValue 落库）→ 列表刷新显示「运行中」
+- ✅ 场景区显示「暂无预设场景」（DB 暂无场景数据，属正常空态）
+
+### 说明
+- 后端设备类型只有 SENSOR/CONTROLLER 大类，无风机/水泵细分，APP 按设备名关键字映射图标，属 UI 适配而非后端改造
+- 控制指令发布到 `greenhouse/{gh}/device/{sn}/command`；模拟器目前未订阅该 topic，后端在发布成功后直接更新 `lastValue`，故开关状态一致；如需模拟器真实反馈（订阅 command 并回发状态），列入后续优化
+- 本轮未推送 GitHub（按提交策略本地提交，待用户指示推送）
