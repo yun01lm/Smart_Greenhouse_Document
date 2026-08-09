@@ -3928,3 +3928,42 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 每个指标独立轴后，各轴刻度按自身数据 min/max 收缩放大（延续 R26.2「刻度拉大让波动明显」的要求）
 - 最多 8 个指标全选时左右各 4 层轴，偏挤属可接受范围；常规勾选 2~4 个时布局清爽
 - 本轮未推送 GitHub（按提交策略本地提交）
+
+
+## 步骤102 — Android APP 编译修复：API 对齐 + 13 处编译错误（APP-C01）
+
+- **操作时间**：2026-08-09
+- **状态**：✅ 完成（`:app:compileDebugJavaWithJavac` 构建通过，BUILD SUCCESSFUL）
+- **背景**：Android Studio 编译 APP 持续报错。前置问题（Gradle 8.5 下载超时、JDK21/jlink 兼容、`app/build.gradle` 与 9 个 Java 文件 BOM、`ApiClient.java` 重复 `.build();`）已在上一轮处理；本轮聚焦剩余 13 处编译错误，并顺带将 APP 接口与后端实际路由对齐（以代码为准，后端 `SensorController`/`AuthController` 等为基准）。
+
+### 改动清单（APP 代码仓库）
+1. `GreenhouseApiService.java`（接口对齐后端路由）
+   - `auth/me` → `auth/profile`（后端实际为 `GET /api/v1/auth/profile`）
+   - `sensor/realtime` → `sensors/realtime`（后端前缀 `/api/v1/sensors`）
+   - 新增 `PUT auth/password`（`changePassword`，后端 `AuthController` 存在）
+   - `alerts/unread-count` 返回类型改为 `ApiResponse<Map<String,Object>>`（后端返回 `{count:N}`）
+   - 历史接口统一改为 `POST sensors/history` + `SensorHistoryRequest` body（后端 `SensorController.history` 为 POST，原先 GET 路径不存在）
+   - 删除无效的 `sensor/history` GET 接口定义
+2. `AlertRepository.java`：`getUnreadAlertCount` 改为 `Callback<Integer>`，从 `Map` 中解析 `count` 字段
+3. `ControlRepository.java`：`executeScene` 改用 `new SceneExecuteRequest(greenhouseId)` + `apiService.executeScene(sceneId, request)`（与接口/模型签名一致）
+4. `SensorRepository.java`：`getHistoryData` → `getHistory`（POST + body，参数含 interval）
+5. `ExpertRepository.java`：新增 `sendImageMessage` / `sendVideoMessage`（multipart，供 `ExpertViewModel` 调用）
+6. `StompClient.java`（data/websocket）：补 `android.os.Looper` import，修复损坏的 import 行
+7. `EmployeeManagementActivity.java`：
+   - `loadGreenhouses` 不再通过 `new BaseRepository() {}.apiService`（protected 字段非法访问），改走 `SensorRepository.getGreenhouses`
+   - `loadPermissions` 回调由 lambda 改为匿名类（`EmployeeRepository.Callback` 非函数式接口）
+   - `EmployeePermissionItem` 补 `setGreenhouseId`/`setGreenhouseName`
+8. `HistoryViewModel.java`：时间参数由格式化字符串改为 epoch 毫秒；将后端 `List<SensorDataPoint>` 映射为 `HistoryResponse`/`HistoryDataPoint`（avg 线；min/max 后端暂无字段留空）
+9. 新增模型 `SensorHistoryRequest.java`（sensorType/startTime/endTime/interval，对应后端 `SensorHistoryRequest`）
+10. `HistoryDataPoint`/`HistoryResponse` 补 setter
+
+### 发现（记录，后续轮次处理）
+- `devices/actuators` 与后端不一致：后端设备列表为 `GET /api/v1/greenhouses/{greenhouseId}/devices`（返回 `DeviceResponse`：deviceType/status 枚举与 APP `ActuatorInfo` 的 type/status/online 字段语义不同），需专门一轮对齐（涉及 APP 控制页模型映射）
+
+### 验证
+- ✅ `gradle.bat :app:compileDebugJavaWithJavac --console=plain --offline --no-daemon` → BUILD SUCCESSFUL（仅剩 1 个遗漏 import，已修复）
+- ⏳ 真机/模拟器安装运行验证待后续（后端 8080 与 Docker 容器运行中）
+
+### 说明
+- 本 repo 编译环境：JDK17（`E:/JDK17/jdk-17.0.20+8`，写入用户级 gradle.properties）、Gradle 8.5（清华镜像下载到用户 wrapper dists）
+- 本轮未推送 GitHub（按提交策略本地提交，待用户指示推送）
