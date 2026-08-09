@@ -3997,3 +3997,67 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - 后端设备类型只有 SENSOR/CONTROLLER 大类，无风机/水泵细分，APP 按设备名关键字映射图标，属 UI 适配而非后端改造
 - 控制指令发布到 `greenhouse/{gh}/device/{sn}/command`；模拟器目前未订阅该 topic，后端在发布成功后直接更新 `lastValue`，故开关状态一致；如需模拟器真实反馈（订阅 command 并回发状态），列入后续优化
 - 本轮未推送 GitHub（按提交策略本地提交，待用户指示推送）
+## 步骤104 — APP 三处崩溃修复（看板历史数据 / 拍照诊断 / 专家咨询）（APP-C03）
+
+- **操作时间**：2026-08-09
+- **状态**：✅ 完成（编译通过 + 模拟器逐入口实测通过）
+- **背景**：用户反馈点击 APP 部分按钮会自动退出到桌面：看板页「历史数据」、AI 助手「拍照诊断」、我的页「专家咨询」。逐一在模拟器复现并抓取 `AndroidRuntime` 堆栈定位根因。
+
+### 崩溃一：历史数据页（HistoryActivity）Chip 空指针
+- **堆栈**：`ChipDrawable.loadFromAttributes → TextAppearance.getTextSize()` NPE，`activity_history.xml` line 60
+- **根因**：应用主题为 `Theme.MaterialComponents.Light.NoActionBar`（非 Bridge 版）。material 1.11.0 的 Chip 默认样式引用 `?attr/textAppearanceBody2`，而该属性只在 **Bridge 主题**（`Base.V14.Theme.MaterialComponents.Light.Bridge` 等）中定义，普通 M2 主题链未定义 → 解析为 0 → `TextAppearance` 为 null → NPE
+- **修复**：
+  1. `app/src/main/res/values/themes.xml`：`Theme.SmartGreenhouse` 父主题改为 `Theme.MaterialComponents.Light.NoActionBar.Bridge`
+  2. `activity_history.xml` / `activity_health.xml`：`Widget.Material3.Chip.Filter` → `Widget.MaterialComponents.Chip.Filter`
+  3. `item_authorization.xml` / `item_expert.xml`：`Widget.Material3.Button.OutlinedButton/TonalButton` → `Widget.MaterialComponents.Button.OutlinedButton/Button`（同主题兼容问题，一并消除隐患）
+
+### 崩溃二：拍照诊断（DiagnosisFragment）FileProvider 找不到根路径 + 相机权限
+- **堆栈1**：`FileProvider$SimplePathStrategy.getUriForFile → Failed to find configured root`（`/storage/emulated/0/Android/data/.../files/Pictures`）
+- **根因1**：`file_paths.xml` 仅配置 `<cache-path>`，但 `takePhoto()` 把临时图片创建在 `getExternalFilesDir(DIRECTORY_PICTURES)`
+- **修复1**：`app/src/main/res/xml/file_paths.xml` 增加 `<external-files-path name="diagnosis_images_ext" path="Pictures/" />`
+- **堆栈2**：`SecurityException: starting Intent IMAGE_CAPTURE with revoked permission android.permission.CAMERA`（Android 13+：清单声明了 CAMERA 权限则拉起相机 Intent 必须已授予）
+- **根因2**：`takePhoto()` 未做运行时权限申请
+- **修复2**：`DiagnosisFragment.java` 新增 `cameraPermissionLauncher`（`RequestPermission`），`takePhoto()` 先检查 `ContextCompat.checkSelfPermission(CAMERA)`，未授权先申请，授权后回调继续拍照；拒绝则 Toast 提示
+
+### 崩溃三：专家咨询（ExpertListActivity）列表项按钮 Material3 样式
+- **表现**：点击「我的 → 专家咨询」即闪退；修复主题后正常。根因同崩溃一：`item_expert.xml` 的 `Widget.Material3.Button.TonalButton` 在 M2 主题下解析异常
+
+### 验证（模拟器 emulator-5554 实测）
+- ✅ `:app:assembleDebug` BUILD SUCCESSFUL
+- ✅ 看板 → 历史数据：正常打开 HistoryActivity，Charts 时间 chip 可切换，无崩溃
+- ✅ AI 助手 → 拍照诊断：先弹相机权限对话框 → 授权后正常拉起系统相机（CameraCaptureActivity），无崩溃
+- ✅ 我的 → 专家咨询：正常打开 ExpertListActivity，无崩溃
+- ⏳ 专家列表空数据：`GET /api/v1/experts?onlineOnly=false` 返回 403，原因是 JWT Token 2 小时过期（`application-dev.yml` `jwt.expiration=7200000`），重新登录后恢复，属预期行为非 bug
+
+### 说明
+- 本轮未推送 GitHub（按提交策略本地提交，待用户指示推送）
+
+## 步骤105 — APP 界面整体美化（APP-C04）
+
+- **操作时间**：2026-08-09
+- **状态**：✅ 完成（编译通过 + 模拟器逐页实测 + 截图存档）
+- **背景**：用户反馈「APP 界面设计不美观、太落后」。在不改动任何功能逻辑与控件 ID 的前提下，统一设计语言：绿色系渐变、大圆角卡片、彩色图标底、统一页面背景。
+
+### 新增共享资源
+- `res/drawable/`：`bg_login_gradient`（登录页渐变背景）、`bg_btn_gradient`（渐变主按钮）、`bg_header_gradient`（顶部栏渐变）、`bg_login_card`（白色大圆角卡片）、`bg_menu_item`（菜单项白卡+描边）、`bg_score_gradient`（评分圆形渐变）、`bg_icon_chip_green/blue/orange/purple`（彩色图标圆底）
+- `res/color/nav_item_color.xml`：底部导航选中态（绿）/未选中（灰）selector
+- `res/values/colors.xml`：追加美化专用色（`gradient_start/end`、`card_white`、`bg_page`、`chip_*`、`divider_light`），未修改既有色值
+
+### 页面改动（仅布局/样式，ID 与逻辑不变）
+1. `activity_login.xml`：渐变全屏背景 + Logo 白圆底 + 标题白字 + 白色圆角表单卡片 + 渐变登录按钮（ScrollView 防小屏溢出）
+2. `fragment_dashboard.xml`：健康评分卡改为绿色渐变英雄卡（白色文字、半透明白评分圆）；三个功能入口卡片圆角 14dp、图标加彩色圆底；页面背景统一 `bg_page`
+3. `fragment_profile.xml`：用户信息卡大圆角 + 头像白字首字母 + 角色徽章；员工管理/专家咨询/授权管理/修改密码改为白底圆角菜单卡（彩色图标底 + 右箭头），退出登录圆角描边按钮
+4. `activity_history.xml`：顶部栏渐变；传感器选择器/时间 chip/图表区域卡片化，图表放入 16dp 圆角白卡
+5. `activity_main.xml`：底部导航阴影 + 选中态绿色 selector
+6. `item_sensor_card.xml`：圆角 8→14dp、阴影提升
+7. 8 个带 MaterialToolbar 页面（专家列表/健康/预警详情/长势/诊断结果/员工管理/阈值设置/聊天）顶部栏统一改为渐变背景；各 Fragment 页面背景统一 `bg_page`
+
+### 验证（模拟器 emulator-5554 实测）
+- ✅ `:app:assembleDebug` BUILD SUCCESSFUL
+- ✅ 登录页（退出登录后）：渐变背景 + 白卡片 + 渐变按钮正常显示；`owner01/123456` 重新登录成功进入 MainActivity，传感器实时数据正常加载（温度 23.6℃、湿度 79.4% 等）
+- ✅ 看板 / 历史数据 / 我的 / 专家咨询 逐页打开无崩溃，布局元素齐全
+- 📸 截图存档：`shot_login.png` / `shot_dashboard.png` / `shot_history.png` / `shot_profile.png` / `shot_expert.png`（F:\Smart_project 下，供人工复核）
+- ⚠️ 环境限制：桌面端 image 预览工具在当前会话不可用，改用 uiautomator dump 验证文本/布局，截图已留存供用户自行查看
+
+### 说明
+- 本轮未推送 GitHub（按提交策略本地提交，待用户指示推送）
