@@ -4197,3 +4197,28 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 ### 说明
 - 后端 ChatService 会话列表 expertName 已改为优先显示 realName，需重启后端生效（当前运行进程为旧代码，接口仍返回 username）。
 - 本轮未推送 GitHub，本地提交待用户指示。
+---
+
+## 2026-08-13（APP-D02.2：点会话进入聊天页崩溃——WebSocket 地址拼接 Bug 修复）
+
+- **时间**：2026-08-13 22:24
+- **范围**：APP 端（ExpertViewModel.connectWebSocket）
+- **现象**：会话列表能显示后，点击任意会话进入聊天页即崩溃退回上一级，多次点击后应用崩溃。
+
+### 根因（logcat 定位）
+- FATAL：java.lang.IllegalArgumentException: Invalid URL port: "8080ws"
+- ExpertViewModel.connectWebSocket() 中拼接 WebSocket 地址：aseUrl.replace("http://","ws://") + "ws/connect"，而 ApiClient.getBaseUrl() 返回的 BuildConfig.API_BASE_URL **末尾无斜杠**（如 http://10.0.2.2:8080）→ 拼接结果为 ws://10.0.2.2:8080ws/connect，OkHttp 解析 URL 抛异常（主线程 onCreate 中抛出 → ChatActivity 启动失败 → 崩溃退回列表）。
+- 后端 WebSocket 端点确认为 /ws/connect（WebSocketConfig），拼接意图正确，仅缺 /。
+
+### 修复
+- ExpertViewModel.connectWebSocket()：
+  - 先转 ws:///wss:// 得到 wsBase
+  - wsBase 末尾无 / 时补上
+  - 再拼接 ws/connect
+
+### 验证
+- 代码审查确认无其他 ws/connect 拼接点（仅此一处）。
+- 需重新编译安装 APK 后验证：点击会话进入聊天页不再崩溃，可看到消息并可继续对话。
+
+### 说明
+- 本轮未推送 GitHub，本地提交待用户指示。
