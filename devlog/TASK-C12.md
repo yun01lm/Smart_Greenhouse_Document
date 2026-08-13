@@ -74,3 +74,19 @@ C12 场景联动是智慧大棚AIoT系统的核心后端模块，属于Phase 2/3
 
 - 完成日期：2026-07-12
 - 关联DEVLOG：步骤10
+
+---
+
+## 后续变更（R36：预警联动场景自动执行 + 设备控制记录，2026-08-14）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `AlertEngine.java` | 修改 | 预警触发后联动执行规则绑定的场景；10 分钟冷却防抖；异步执行不阻塞 MQTT 回调 |
+| `SceneService.java` | 修改 | 新增 `executeSceneByAlert`（系统身份执行场景，日志 source=ALERT） |
+| `ControlService.java` | 修改 | 新增 `controlDeviceBySystem`（系统控制、日志 userId=null 显示"系统"）；新增 `getGreenhouseLogs` 分页查询（权限收口+场景名）；`ControlLogResponse` 新增 sceneName |
+| `ControlController.java` | 修改 | `/control/logs` 扩展 greenhouseId 分页查询（兼容原 deviceId） |
+| `ControlLogRepository.java` | 修改 | 新增按设备ID集+来源分页查询 |
+| `web/src/views/alerts/AlertRulePage.vue` | 修改 | 预警规则弹窗新增"联动场景"下拉；表格新增"联动场景"列 |
+| `web/src/api/control.js` | 新增 | 场景列表/执行场景 API 封装 |
+
+> 验证：后端 mvn compile、APP gradle 离线编译、Web npm build 均通过。

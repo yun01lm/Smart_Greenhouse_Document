@@ -4279,3 +4279,42 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 
 ### 说明
 - 本轮未推送 GitHub，本地提交待用户指示；后续推送前需重新生成 APK 安装验证。
+
+---
+
+## 2026-08-14（R36：预警联动场景自动执行 + 设备控制记录，含 APP 防抖修复）
+
+- **时间**：2026-08-14
+- **范围**：后端（AlertEngine / SceneService / ControlService / ControlController）+ Web（预警规则页）+ APP（设备控制页防抖、设备控制记录页）
+- **需求背景**：用户反馈 ①APP 设备控制页按钮多次点击后卡死、卡片空白；②"一键执行场景联动"应为预警联动——预警超出条件自动执行场景，并记录"哪个设备、什么时间、谁控制的，场景触发的要标记出来"。
+
+### 一、APP 设备控制页卡死修复（防抖 + 代际版本控制）
+- **根因**：每次开关/执行场景完成后整页刷新（每大棚并发拉设备+场景），重复点击叠加多个刷新任务 → 请求风暴、数据交错覆盖；loading 被并发操作共享导致状态错乱。
+- **修复**（`ControlViewModel`）：
+  1. 加载采用"代际计数"（deviceLoadGeneration / sceneLoadGeneration），只接受最新一轮结果，过期响应丢弃；
+  2. loading 改为计数管理（loadingCount +1/-1），全部结束才隐藏；
+  3. 场景执行/创建防重（isOperating），操作进行中忽略重复提交；
+  4. 单设备控制成功后本地即时更新开关状态（DeviceInfo 新增 setStatus/setLastValue），再后台静默刷新。
+- `SceneAdapter` 增加 setOperating：执行中按钮禁用并显示"执行中..."。
+
+### 二、预警联动场景（Phase 2 落地，复用已预留字段）
+- **复用数据库既有字段**：`alert_rules.scene_id`（规则→场景）、`scenes.trigger_condition`（场景触发条件，本轮暂用规则绑定方案）。
+- **后端**：
+  1. `ControlService.controlDeviceBySystem(deviceId, action, sceneId)`：系统自动控制，跳过用户权限校验，日志 userId=null（显示"系统"）、source=ALERT、记录 sceneId；
+  2. `SceneService.executeSceneByAlert(sceneId)`：预警联动执行场景（系统身份，保留设备在线/类型校验）；
+  3. `AlertEngine`：预警触发生成告警后，若规则绑定了场景则异步执行该场景；**10 分钟冷却防抖**（内存 ConcurrentHashMap，ruleId→最近触发时间），防止传感器高频上报导致场景反复执行/设备抖动；
+  4. 控制日志来源约定：MANUAL（手动）/ SCENE（手动一键执行场景）/ ALERT（预警联动自动触发）。
+- **Web**（`AlertRulePage.vue` + 新增 `api/control.js`）：
+  - 预警规则新建/编辑弹窗新增"联动场景"下拉（按大棚加载场景，可清空=不联动），带说明"预警触发时自动执行该场景（同一规则 10 分钟内不重复触发）"；
+  - 规则表格新增"联动场景"列展示场景名。
+
+### 三、设备控制记录（三端）
+- **后端**：`GET /api/v1/control/logs` 扩展——`greenhouseId+page+size+source` 分页查询（原 deviceId 查询兼容保留）；权限收口（OWNER 本棚、WORKER/TECHNICIAN 需授权、ADMIN 任意）；`ControlLogResponse` 新增 sceneName（触发场景名），操作人 userId 为空显示"系统"。
+- **APP**：设备控制页新增"设备控制记录 ›"入口 → `ControlLogActivity`（分页列表：设备名/动作/来源标签/时间/操作人/结果/触发场景/失败原因，按来源筛选 全部/手动/场景触发/预警联动，滚动加载更多）。
+
+### 验证
+- 后端 `mvn compile` EXIT=0；APP `gradle :app:compileDebugJavaWithJavac --offline` EXIT=0；Web `npm run build` EXIT=0。
+- 运行时验证（重启后端→建场景→绑定预警规则→模拟器触发预警→观察自动执行与控制记录）待环境就绪后进行。
+
+### 说明
+- 本轮未推送 GitHub，本地提交待用户指示。

@@ -155,3 +155,25 @@ GET    devices/actuators          — 获取设备列表 (greenhouseId)
 | `ui/control/ControlFragment.java` | 修改 | 接入分组数据渲染、添加场景对话框交互 |
 
 > 验证：离线 Gradle 编译通过（EXIT=0）；运行时验证待模拟器环境恢复后进行。
+
+---
+
+## 后续变更（R36：设备控制页防抖 + 设备控制记录页，2026-08-14）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `viewmodel/ControlViewModel.java` | 修改 | 加载代际计数（过期响应丢弃）、loading 计数管理、场景执行/创建防重、单设备控制本地即时更新状态 |
+| `adapter/SceneAdapter.java` | 修改 | setOperating：执行中禁用按钮并显示"执行中..." |
+| `adapter/ControlLogAdapter.java` | 新增 | 控制记录列表适配器（来源标签：手动/场景触发/预警联动） |
+| `ui/control/ControlFragment.java` | 修改 | 观察 isOperating；新增"设备控制记录"入口 |
+| `ui/control/ControlLogActivity.java` | 新增 | 设备控制记录页（分页、按来源筛选、加载更多） |
+| `data/model/ControlLogItem.java` | 新增 | 控制日志模型（含 source/sceneName/success） |
+| `data/api/GreenhouseApiService.java` | 修改 | 新增 getControlLogs 分页接口 |
+| `data/repository/ControlRepository.java` | 修改 | 新增 getControlLogs |
+| `data/model/DeviceInfo.java` | 修改 | 新增 setStatus/setLastValue（本地即时更新用） |
+| `res/layout/activity_control_log.xml` | 新增 | 控制记录页布局（含来源筛选 Chip） |
+| `res/layout/item_control_log.xml` | 新增 | 记录项布局 |
+| `res/layout/fragment_control.xml` | 修改 | 设备列表标题行新增"设备控制记录"入口 |
+| `AndroidManifest.xml` | 修改 | 注册 ControlLogActivity |
+
+> 验证：APP gradle 离线编译通过（EXIT=0）；运行时验证（防抖手感、控制记录展示）待重新安装 APK 后进行。
