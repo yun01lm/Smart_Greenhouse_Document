@@ -134,3 +134,24 @@ GET    devices/actuators          — 获取设备列表 (greenhouseId)
 |----------|----------|----------|
 | `ui/control/ControlFragment.java` | 修改 | 员工无 can_control_device 时隐藏设备/场景列表，显示"无权限"提示 |
 - **TASK-C12**（场景联动引擎）：后端场景逻辑
+
+---
+
+## 后续变更（APP-E01：按大棚分组 + 场景添加，2026-08-13）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `data/model/DeviceGroup.java` | 新增 | 设备分组模型（大棚ID/名称/设备列表） |
+| `data/model/CreateSceneRequest.java` | 新增 | 创建场景请求模型（POST /control/scenes body） |
+| `adapter/DeviceAdapter.java` | 修改 | 改为双 ViewType 分组展示（分组标题+设备项），修复开关监听顺序 |
+| `adapter/SceneDevicePickAdapter.java` | 新增 | 添加场景对话框设备动作选择适配器 |
+| `res/layout/item_device_group_header.xml` | 新增 | 分组标题布局（大棚名+设备数） |
+| `res/layout/dialog_create_scene.xml` | 新增 | 添加场景对话框布局（大棚/名称/描述/设备动作） |
+| `res/layout/item_scene_device_pick.xml` | 新增 | 对话框设备勾选行布局 |
+| `res/layout/fragment_control.xml` | 修改 | 场景区域新增"＋ 添加"入口 |
+| `viewmodel/ControlViewModel.java` | 修改 | 新增 loadDeviceGroups / loadAllScenes / createScene |
+| `data/repository/ControlRepository.java` | 修改 | 新增 getGreenhouses / createScene |
+| `data/api/GreenhouseApiService.java` | 修改 | 新增 POST control/scenes |
+| `ui/control/ControlFragment.java` | 修改 | 接入分组数据渲染、添加场景对话框交互 |
+
+> 验证：离线 Gradle 编译通过（EXIT=0）；运行时验证待模拟器环境恢复后进行。

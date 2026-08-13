@@ -4255,3 +4255,27 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 
 ### 说明
 - 本轮未推送 GitHub，本地提交待用户指示。
+---
+
+## 2026-08-13（APP-E01：设备控制按大棚分组 + 场景联动"添加"功能）
+
+- **时间**：2026-08-13 23:30
+- **范围**：APP 端（设备控制页 ControlFragment / DeviceAdapter / ControlViewModel / ControlRepository / 布局与模型）
+- **需求**：设备控制页按大棚分组展示、分组标记清晰；"一键场景联动"（预设控制）此前只有标题位置、无实际功能展示、不能添加，需补全场景卡片展示与新增场景能力。
+
+### 改动内容
+1. **设备列表按大棚分组**：
+   - 新增 `DeviceGroup.java`（大棚ID/名称/设备列表/设备数），`DeviceAdapter` 改为双 ViewType（分组标题 + 设备项），分组标题展示大棚名 + 设备数（`item_device_group_header.xml`）。
+   - `ControlViewModel.loadDeviceGroups()`：先取全部大棚，再并发取每棚 CONTROLLER 设备组装分组；`ControlFragment` 观察 `getDeviceGroups()` 并渲染。
+2. **场景联动完善**：
+   - 场景列表从"仅当前大棚"改为 `loadAllScenes()` 聚合全部大棚场景（横向卡片仍显示名称/动作摘要/一键执行）。
+   - 场景区域标题右侧新增"＋ 添加"入口（`fragment_control.xml`），点击弹出"添加场景"对话框（`dialog_create_scene.xml`）：选择大棚（Spinner）→ 输入场景名称/描述 → 勾选设备动作（`SceneDevicePickAdapter` + `item_scene_device_pick.xml`，勾选包含、开关选开/关）→ 调用 `POST /api/v1/control/scenes`（`GreenhouseApiService.createScene` + `ControlRepository.createScene` + `CreateSceneRequest.java`）。
+3. **Bug 修复**：`DeviceAdapter` 开关监听顺序调整为"先清除旧监听再 setChecked"，避免 RecyclerView 复用 ViewHolder 时误触发上一台设备的控制指令。
+4. **构建环境**：本机无外网，Gradle 离线缓存缺插件元数据导致无法构建；临时用 Gradle 缓存生成本地 Maven 镜像 `.gradle-mirror/` + init 脚本 `.gradle-offline.init.gradle` 完成离线编译验证（两者已加入 .gitignore，不入库）。
+
+### 验证
+- `gradle :app:compileDebugJavaWithJavac --offline` 构建通过（EXIT=0，BUILD SUCCESSFUL），资源合并/DataBinding 生成均成功。
+- 运行时验证（模拟器点选/新建场景）待用户重启环境后进行。
+
+### 说明
+- 本轮未推送 GitHub，本地提交待用户指示；后续推送前需重新生成 APK 安装验证。
