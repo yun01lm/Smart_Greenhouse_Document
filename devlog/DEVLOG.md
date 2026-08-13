@@ -4167,3 +4167,33 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 
 ### 说明
 - 本轮未推送 GitHub，按提交策略本地提交，待用户指示推送。
+---
+
+## 2026-08-13（APP-D02.1：会话列表/聊天页不显示数据——分页参数 Bug 修复）
+
+- **时间**：2026-08-13 22:15
+- **范围**：APP 端（ExpertViewModel）
+- **现象**：APP 已有"我的咨询"入口，但会话列表空白；聊天页也看不到历史消息。
+
+### 根因
+- 后端 GET /api/v1/chat/conversations、GET /api/v1/chat/conversations/{id}/messages 的分页为 **0 基**（PageRequest.of(page, size)），而 ExpertViewModel 的 conversationPage / messagePage 初始为 1，直接把 1 当第一页传给后端 → 实际请求第 2 页，会话/消息不足一页时返回空数组。
+- 后端 QA 历史接口是 1 基（内部 page-1），APP 对 QA 传 1 是正确的；但 Chat 接口是 0 基，之前 APP 传 1 是错的（两端接口约定不一致导致）。
+
+### 修复
+- ExpertViewModel.java：
+  - conversationPage / messagePage 初始值 1 →  
+  - efreshConversations() 重置 conversationPage = 0
+  - enterConversation() 重置 messagePage = 0
+
+### 验证
+- 后端接口实测（owner01 登录）：
+  - GET /api/v1/chat/conversations?page=1&size=20 → 0 条（APP 旧行为）
+  - GET /api/v1/chat/conversations?page=0&size=20 → 3 条（id=1/3/4，ACTIVE）
+  - GET /api/v1/chat/conversations/4/messages?page=1&size=20 → 0 条
+  - GET /api/v1/chat/conversations/4/messages?page=0&size=20 → 2 条（USER 提问 + EXPERT 回复）
+- Web 端 ExpertChat/ExpertPage 均为 0 基传参（page-1），与后端一致，无需修改。
+- APP 端需重新编译安装 APK 后验证。
+
+### 说明
+- 后端 ChatService 会话列表 expertName 已改为优先显示 realName，需重启后端生效（当前运行进程为旧代码，接口仍返回 username）。
+- 本轮未推送 GitHub，本地提交待用户指示。
