@@ -4222,3 +4222,36 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 
 ### 说明
 - 本轮未推送 GitHub，本地提交待用户指示。
+---
+
+## 2026-08-13（R35：专家咨询会话按人物合并 + Web 专家端会话名称显示修复）
+
+- **时间**：2026-08-13 22:51
+- **范围**：后端（ChatService/ConversationResponse/Repository）+ Web 端（ExpertChat.vue）+ 历史数据迁移
+- **需求**：会话列表从"每次求助一条"改为"按专家合并"——同一专家不管求助几次都在一个对话中；已关闭会话再求助自动重新开启并继续（历史消息不丢）。
+
+### 后端改动
+1. ChatService.createConversation 复用逻辑（R35）：
+   - 优先复用该用户与该专家"未关闭"（等待中/进行中）的会话，把求助主题作为新消息追加；
+   - 无进行中会话时复用"最近关闭"的会话并自动重新开启（status→ACTIVE、closedAt 清空）继续对话；
+   - 从未对话过的专家才新建会话。
+2. ChatConversationRepository 新增两个查询方法：indTopByUserIdAndExpertIdAndStatusNotOrderByCreatedAtDesc、indTopByUserIdAndExpertIdAndStatusOrderByClosedAtDesc。
+3. ConversationResponse 新增 userName 字段：专家视角显示咨询用户真实姓名（realName 优先，回退 username）；getConversations 同时返回 expertName（专家名）与 userName（用户/咨询者名）。
+4. ChatService.getLastMessagePreview 改为按创建时间**倒序**取最新一条（原来升序取第一条，会话列表"最后消息"一直显示的是最早消息）。
+
+### Web 端改动
+- ExpertChat.vue：会话列表项用户名称区域新增省略样式（.conv-user 单行省略 + .conv-time 不压缩），配合后端 userName 字段显示完整真实姓名；会话列表增加 gap 布局。
+
+### 历史数据迁移（MySQL，先查后改）
+- 合并前：会话 1/3/4（均 user=2, expert=3），消息分布 1:6、3:3、4:2（共 11 条）。
+- 执行：把会话 3、4 的消息 conversation_id 全部迁移到最早会话 1；组内任一 ACTIVE 则主会话状态置 ACTIVE；删除多余会话 3、4。
+- 合并后：会话 1 共 11 条消息，状态 ACTIVE。**未做备份**（按用户要求直接合并，历史消息全部保留未丢失）。
+
+### 验证（后端已重启，PID 35028）
+- 用户 owner01 会话列表：1 条，专家=李专家；
+- 再次向 expert01 求助：返回会话 id=1（复用成功，未新建）；
+- 专家 expert01 会话列表：用户=张棚主（真实姓名），最后消息=最新一条；
+- 后端 mvn compile 通过（EXIT=0）。
+
+### 说明
+- 本轮未推送 GitHub，本地提交待用户指示。
