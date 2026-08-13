@@ -4129,3 +4129,41 @@ docker exec -it greenhouse-mosquitto mosquitto_passwd -c /mosquitto/config/passw
 - ????? GitHub???????????????????
 - ?????? `.env.local` ??????`start_all.bat` ???????????????? Key
 - ????????????????????"???"????????????
+
+---
+
+## 2026-08-13（APP-D02：专家咨询"我的咨询"会话列表功能）
+
+- **时间**：2026-08-13 22:07
+- **范围**：APP 端 + 后端（ChatService）
+- **背景**：APP 内用户发起专家求助后没有"我的咨询/会话列表"入口，专家回复后用户无法查看、无法继续对话。
+
+### 问题一：APP 无会话列表入口
+- **根因**：ProfileFragment 的"专家咨询"入口只跳 ExpertListActivity（专家列表页），列表页也没有"我的咨询"入口；聊天基础设施（ExpertViewModel / ExpertRepository / ChatActivity）早已存在但无处进入。
+- **修复**：
+  1. 新增 ConversationListActivity（我的咨询页）+ ConversationAdapter + ctivity_conversation_list.xml + item_conversation.xml：展示专家名、咨询主题、最后消息、状态（等待中/进行中/已结束）、未读角标、时间；点击进入 ChatActivity 继续对话。
+  2. ExpertListActivity：顶部新增"我的咨询"入口（含未读数字角标）；发起求助成功后自动跳转聊天页（ExpertViewModel 新增 createdConversation 事件）。
+  3. AndroidManifest.xml：注册 ConversationListActivity。
+
+### 问题二：APP 会话/消息接口解析格式与后端不一致（隐藏 Bug）
+- **根因**：后端 GET /api/v1/chat/conversations、GET /api/v1/chat/conversations/{id}/messages 返回 ApiResponse<List<...>>（数组），APP 端却按 PageResult（{list:[...]}）解析 → 会话列表/消息必然解析失败、空白；GET /api/v1/chat/unread 后端返回 {count:N}，APP 读 	otalUnread → 未读数恒为 0。
+- **修复**（沿用诊断历史修复模式）：
+  1. GreenhouseApiService.java：getConversations / getMessages 返回类型改为 List<...>。
+  2. ExpertRepository.java：回调与响应解析改为 List<...>。
+  3. ExpertViewModel.java：loadConversationsPage / loadMessages 回调改为 List<...>。
+  4. UnreadResponse.java：字段改为 count（对齐后端 {count:N}）。
+
+### 问题三：快照消息解析风险
+- **根因**：后端 MessageResponse.snapshotData 为 JSON 字符串，APP ChatMessage.snapshotData 原为对象类型 → Gson 解析可能整体失败。
+- **修复**：ChatMessage.snapshotData 改为 String，ChatMessageAdapter.bindSnapshot 改用 JSONObject 解析显示（兼容字段缺失）。
+
+### 连带：后端会话列表专家姓名
+- **修复**：ChatService.getConversations 的 expertName 优先返回 ealName（无则回退 username）。
+
+### 验证
+- 后端 mvn compile 通过（EXIT=0）。
+- Web 端专家"咨询记录"复查：实际走 /admin/experts/conversations（后端返回 PageResult），es.data?.list 解析正确，无需修改（此前判断有误，已确认）。
+- APP 端需重新安装 APK 做运行时验证（本轮未做模拟器验证）。
+
+### 说明
+- 本轮未推送 GitHub，按提交策略本地提交，待用户指示推送。
