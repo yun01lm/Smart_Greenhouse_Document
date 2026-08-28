@@ -4425,3 +4425,32 @@ pm run build 通过；浏览器逐页截图验证（登录/管理员总览/棚�
 
 - **验证**：三期各提交 `gradle assembleDebug --offline` 构建成功 → `adb install` 模拟器截图验证（亮/暗双模式）。
 - 已推送 GitHub（cc92eea..b566dbb）。
+
+
+---
+
+## 2026-08-28（R41：APP 端 UI 重构方向 A（深色科技感）+ 4 项功能（可视化/推送/农事/导出））
+
+- **时间**：2026-08-28
+- **范围**：APP 端（res/ 资源层 + 4 个新组件/Service/页面）
+- **需求背景**：用户对前三期绿色系 UI 仍不满意（"配色/布局/按钮不够高级"），选定**方向 A 深色科技感**方案，并批准 4 项功能排期（数据可视化/离线推送/农事提醒/数据导出）。方案文件：`APP端UI重构A方案与功能实施计划.md`。
+
+### 一、UI 重构方向 A（Step1-Step3，commit 8f0e074 / 394ed30 / e320d3f）
+1. **深色科技感 tokens**（values/values-night colors.xml 重建）：墨绿黑底 `#0E1F16`/`#0A1712`、毛玻璃卡片（surface 12% 白 + hairline 边框）、荧光绿强调 `#3DDC84`、青/橙/红语义色、8 类传感器类型语义色；MainActivity 强制深色（MODE_NIGHT_YES）；
+2. **全局样式**（styles.xml + themes.xml 主题级生效）：CardView.SmartGreenhouse（cardViewStyle 全局毛玻璃 16dp+描边）、Button.SmartGreenhouse（materialButtonStyle 荧光绿胶囊 26dp）；
+3. **看板 2×2 入口**：长势/历史/预警/**健康详情** 四格毛玻璃卡片（替代原 3 圆形按钮）；
+4. 登录页深色渐变、底部导航深色毛玻璃、诊断历史列表时间格式化（补 R39 遗漏处）。
+
+### 二、4 项功能（Step4，commit 20e8c77 / 4944de6 / ebaab64）
+1. **F1 数据可视化**：新增 `SparklineView`（零依赖 Canvas 迷你趋势曲线 + 渐变填充 + 末点高亮），看板传感器卡片内嵌，数据来自 sensors/history 近 6h 末段（DashboardViewModel.loadTrendData），曲线颜色随传感器类型语义色；
+2. **F2 离线/异常主动推送**：新增 `MonitorService`（Handler 15 分钟轮询未读告警数 + 控制器离线数，状态变化发系统通知，NotificationChannel），Manifest 注册 + POST_NOTIFICATIONS 权限，MainActivity 启动；
+3. **F3 农事提醒/日历**：新增 `FarmingCalendarActivity`（作物生长周期展示 + 本地提醒列表 + 添加提醒）、`ReminderReceiver`（AlarmManager 次日 8:00 通知），"我的"页新增"农事提醒"入口；
+4. **F4 数据导出/分享**：历史数据页 toolbar 新增"导出 CSV"（当前传感器近 24h → CSV 文件 → FileProvider + ACTION_SEND 分享）；修复历史页缺 setSupportActionBar 导致菜单不显示。
+
+### 验证
+- 每 Step `gradle assembleDebug --offline` 构建成功 → `adb install` 模拟器截图/实测：
+  - 深色看板 2×2 入口、sparkline 语义色曲线（截图 uiA-7）
+  - MonitorService 运行（dumpsys activity services）
+  - 农事提醒入口生效（我的页）
+  - CSV 导出分享面板弹出（sensor_TEMPERATURE_*.csv）
+- 已推送 GitHub（b566dbb..ebaab64，6 个提交）。

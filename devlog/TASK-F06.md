@@ -115,3 +115,14 @@ GET /api/v1/sensors/history?greenhouseId=&sensorType=&startTime=&endTime=&aggreg
 
 > 根因：APP 类型代码与后端不一致，默认"空气温度"(TEMP) 请求即 400。
 > 验证：历史数据图表正常渲染曲线（截图 v2-history），不再报"加载历史数据失败"。
+
+---
+
+## 后续变更（R41：F4 历史数据 CSV 导出 + UI 深色化，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `HistoryActivity.java` | 修改 | toolbar 新增"导出 CSV"（当前传感器近 24h → CSV → FileProvider + ACTION_SEND 分享）；补 setSupportActionBar（修复菜单不显示）；图表配色随深色主题 |
+| `menu/menu_history.xml` | 新增 | 导出菜单项 |
+
+> 验证：分享面板弹出（sensor_TEMPERATURE_*.csv）；已推送 GitHub。

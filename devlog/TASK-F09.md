@@ -95,3 +95,16 @@ Android Fragment 组件。
 
 > 根因：此前只有 UI 无点击监听，功能完全失效（APP 审查发现）。
 > 验证：点击"修改密码"弹出对话框（截图 v3-password）。
+
+---
+
+## 后续变更（R41：F3 农事提醒入口 + UI 深色化，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `fragment_profile.xml`/`ProfileFragment.java` | 修改 | "我的"页新增"农事提醒"入口 → FarmingCalendarActivity |
+| `ui/farming/FarmingCalendarActivity.java` | 新增 | 农事日历：作物生长周期展示（getCropCycles）+ 本地提醒列表（SharedPreferences）+ 添加提醒 |
+| `ui/farming/ReminderReceiver.java` | 新增 | AlarmManager 次日 8:00 通知（BroadcastReceiver） |
+| `activity_farming_calendar.xml` | 新增 | 农事日历布局（深色毛玻璃） |
+
+> 验证：我的页入口生效、日历页打开正常；已推送 GitHub。

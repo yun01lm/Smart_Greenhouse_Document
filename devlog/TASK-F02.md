@@ -114,3 +114,15 @@ related_docs: [PRD-002, API-005]
 | `ThresholdAdapter.java` | 修改 | NAME_MAP 对齐后端枚举，中文标签正确（"O₂浓度"文案问题消失） |
 
 > 验证：预警详情触发时间显示"2026-08-07 08:09"；阈值页 8 类中文标签（截图 v6-threshold）。
+
+---
+
+## 后续变更（R41：F2 离线/告警主动推送，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `service/MonitorService.java` | 新增 | Handler 15 分钟轮询未读告警数 + 控制器离线数，状态变化发系统通知（NotificationChannel）；无 WorkManager 依赖（离线构建兼容） |
+| `AndroidManifest.xml` | 修改 | 注册 Service + POST_NOTIFICATIONS 权限 |
+| `MainActivity.java` | 修改 | onCreate 启动 MonitorService |
+
+> 验证：dumpsys activity services 确认 MonitorService 运行；已推送 GitHub。

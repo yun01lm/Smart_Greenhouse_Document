@@ -136,3 +136,18 @@ Android APP 编译通过（app-debug.apk, 7.2MB）。MVVM 架构完整：View(Ac
 | `bg_icon_chip_*.xml` | 修改 | 功能入口图标底升级柔和渐变（UI 重构二期） |
 
 > 验证：模拟器截图确认卡片标题中文、看板现代感提升（review_shots/app/p1、p2）。
+
+---
+
+## 后续变更（R41：UI 方向 A 深色科技感 + F1 看板迷你趋势曲线，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `colors.xml`(values/values-night) | 重写 | 深色科技感 tokens：墨绿黑底、毛玻璃卡片、荧光绿 #3DDC84 强调、8 类传感器语义色 |
+| `styles.xml`/`themes.xml` | 修改 | cardViewStyle 全局毛玻璃卡 + materialButtonStyle 荧光绿胶囊按钮 |
+| `fragment_dashboard.xml` | 修改 | 功能入口改 2×2 毛玻璃卡片（长势/历史/预警/健康详情） |
+| `SparklineView.java` | 新增 | 零依赖 Canvas 迷你趋势曲线（渐变填充+末点高亮+类型语义色） |
+| `item_sensor_card.xml`/`SensorAdapter.java` | 修改 | 传感器卡片内嵌 sparkline，数据来自 sensors/history 近 6h |
+| `DashboardViewModel.java`/`DashboardFragment.java` | 修改 | loadTrendData 拉取各类型趋势数据并下发 |
+
+> 验证：模拟器截图确认 sparkline 语义色曲线正常；已推送 GitHub。
