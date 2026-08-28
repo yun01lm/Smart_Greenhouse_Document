@@ -4454,3 +4454,20 @@ pm run build 通过；浏览器逐页截图验证（登录/管理员总览/棚�
   - 农事提醒入口生效（我的页）
   - CSV 导出分享面板弹出（sensor_TEMPERATURE_*.csv）
 - 已推送 GitHub（b566dbb..ebaab64，6 个提交）。
+
+
+---
+
+## 2026-08-28（R42：我的页按钮文字消失修复 + 看板截图分享 + 历史图表深色适配）
+
+- **时间**：2026-08-28
+- **范围**：APP 端（drawable + DashboardFragment + HistoryActivity）
+- **需求背景**：用户反馈"我的"页按钮文字消失；同时按 R41 遗留项继续处理（看板截图分享、深色图表配色）。
+
+1. **我的页文字消失修复**：`bg_menu_item.xml` 原为纯白底（#FFFFFF），与深色主题下浅色文字（on_surface）叠加导致**白底浅字不可见**；改为深色毛玻璃（surface + outline 边框），文字恢复正常显示；
+2. **登录卡毛玻璃**：`bg_login_card.xml` 白底 → surface_2 毛玻璃 + hairline；
+3. **看板截图分享（F4 附加）**：看板健康卡右上角新增分享按钮（bg_icon_chip_white + ic_snapshot），DashboardFragment 截取根视图 → PNG → FileProvider + ACTION_SEND；实测"Sharing image"面板弹出；
+4. **历史图表深色适配**：MPAndroidChart 轴标签/网格线/图例文字改为深色系（#9DB0A6 / #22312A）。
+
+- **验证**：模拟器实测——"我的"页入口行深色毛玻璃 + 文字清晰；看板分享弹出 image 分享面板。
+- 已推送 GitHub（commit 2258595，6 文件，+64/-3）。

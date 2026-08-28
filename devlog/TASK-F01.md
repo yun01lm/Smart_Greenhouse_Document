@@ -151,3 +151,15 @@ Android APP 编译通过（app-debug.apk, 7.2MB）。MVVM 架构完整：View(Ac
 | `DashboardViewModel.java`/`DashboardFragment.java` | 修改 | loadTrendData 拉取各类型趋势数据并下发 |
 
 > 验证：模拟器截图确认 sparkline 语义色曲线正常；已推送 GitHub。
+
+---
+
+## 后续变更（R42：看板截图分享 + 历史图表深色适配，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `fragment_dashboard.xml`/`DashboardFragment.java` | 修改 | 看板健康卡新增截图分享按钮（截根视图→PNG→ACTION_SEND） |
+| `bg_icon_chip_white.xml` | 新增 | 分享按钮白色半透明圆底 |
+| `HistoryActivity.java` | 修改 | 图表轴/网格/图例文字深色适配（#9DB0A6/#22312A） |
+
+> 验证：分享面板弹出（Sharing image）；已推送 GitHub（2258595）。
