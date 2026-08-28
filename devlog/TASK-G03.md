@@ -102,3 +102,14 @@ vite v8.1.4 building for production...
 ~~环境 JDK 20 < 项目要求 JDK 21，无法完整编译。代码语法审查通过（Lombok + Spring 标准模式，与已有代码一致）。~~
 
 **步骤35 已完全解决**：安装 JDK 21 + 修复 Spring AI 版本 + 修复 6 个项目已有编译错误，`mvn compile` 通过（BUILD SUCCESS）。详见 DEVLOG 步骤35。
+
+---
+
+## 后续变更（R37/R38：用户管理深色化 + 角色筛选补技术员，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| web/src/views/users/UserList.vue | 修改 | 角色筛选下拉补"技术员"选项（TECHNICIAN）；页面深色玻璃化；分页器统一 |
+| web/src/views/users/RoleOverview.vue | 修改 | 页面深色玻璃化 |
+
+> 验证：角色下拉现为 管理员/棚主/员工/技术员/专家；已推送 GitHub（cc92eea）。

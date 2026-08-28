@@ -152,3 +152,16 @@ Web 端 Vue 3 项目搭建完成，数据总览大屏包含 8 传感器卡片 + 
 - 关联DEVLOG：步骤32
 - 左侧菜单 G02-G10 已预设但 disabled，后续逐步启用
 - dist 产物约 2.3MB（gzip 约 540KB）
+
+---
+
+## 后续变更（R37：趋势图数据标识稳定性修复 + 全站深色看板，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| web/src/views/dashboard/TrendChart.vue | 重写 | 图例改为带色点自定义勾选行（顺序固定）；轴位置按指标定义序号固定；预测无数据标注"暂无预测数据"；轮询增量合并更新；模拟数据缓存；勾选上限 4/下限 1（竞态免疫） |
+| web/src/views/dashboard/DashboardPage.vue | 修改 | 无数据时聚合空态卡片（替代 8 张"无数据"灰卡）；天气 emoji 清理 |
+| web/src/views/dashboard/AdminDashboard.vue | 修改 | 深色玻璃化（统计卡/环境聚合/预警/天气/系统监控）+ 数字间距修复 |
+| web/src/assets/main.css | 重写 | 设计令牌 + Element Plus dark 主题微调 + 登录页深色化 |
+
+> 验证：浏览器实测勾选交互（上限 4/下限 1/轴不跳变）；npm run build 通过；已推送 GitHub（0a3ec50）。

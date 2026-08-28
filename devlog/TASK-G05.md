@@ -95,3 +95,14 @@ vite build → ✓ built in 1.01s
 - dist/assets/AlertRulePage-C2n3ymTa.js (13.01 kB / gzip: 4.06 kB)
 - dist/assets/AlertRulePage-DAF8y3E1.css (0.71 kB / gzip: 0.33 kB)
 ```
+
+---
+
+## 后续变更（R37：预警规则页深色化 + 场景名映射 + 分页统一，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| web/src/views/alerts/AlertRulePage.vue | 修改 | 联动场景列新增前端编码映射（fnvcc → 水泵+风机联动，选项①不改数据库）；"共 N 条"改为 el-pagination 客户端分页；页面深色玻璃化 |
+| web/src/views/export/ReportPage.vue | 修改 | 数据导出页深色化 |
+
+> 验证：规则列表联动场景显示"水泵+风机联动"；已推送 GitHub（0a3ec50）。
