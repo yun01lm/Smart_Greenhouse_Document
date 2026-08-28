@@ -4471,3 +4471,24 @@ pm run build 通过；浏览器逐页截图验证（登录/管理员总览/棚�
 
 - **验证**：模拟器实测——"我的"页入口行深色毛玻璃 + 文字清晰；看板分享弹出 image 分享面板。
 - 已推送 GitHub（commit 2258595，6 文件，+64/-3）。
+
+
+---
+
+## 2026-08-29（R43：APP 功能补全 8 项——预警规则管理/多棚对比/告警闭环/体验/设备列表修复/语音链路/图例中文/Web技术员标签）
+
+- **时间**：2026-08-29
+- **范围**：APP 端 7 项 + 后端 1 项 + Web 端 1 项
+- **需求背景**：执行已批准计划（第 1/2/4/6/7/10/11 项 + Web 第③项），实时监控与长势评估等硬件项按约定等 RTSP 摄像头。
+
+1. **第 7 项 设备列表只显示 3 大棚（fix 2254048）**：根因 ScrollView 内嵌套 RecyclerView `setHasFixedSize(true)` 导致高度截断只渲染首屏；改 `setHasFixedSize(false)` + `setNestedScrollingEnabled(false)`，5 个分组完整展开、可滚动。
+2. **第 1 项 预警规则管理（feat 8773932）**：新增 AlertRuleActivity（列表/新建/编辑对话框：大棚/传感器/阈值/级别/联动场景/启用 + 删除），复用后端 `/alerts/rules` CRUD；预警中心顶部新增"规则"入口。
+3. **第 2 项 多棚对比（feat a88b61f）**：新增 CompareActivity——勾选 2-3 个大棚 → 拉实时数据 → 按传感器类型并列对比表格；"我的"页新增入口。
+4. **第 4 项 告警闭环（feat 0f27386）**：预警列表新增"处理"按钮（确认框 → `PUT /alerts/{id}/handle`，后端接口已存在）→ 已处理置灰并刷新。
+5. **第 6 项 体验类（feat f8b2a01）**：首启欢迎引导（4 功能页介绍，SharedPreferences 标记仅弹一次）；无障碍检查（全布局 0 处 dp 文字，均跟随系统字体）。
+6. **第 10 项 语音问答链路修复（feat bbaba80）**：实测发现语音上传 400"不支持的文件类型"——APP 原用 MediaRecorder 录 AAC（audio/aac 不被后端接受，且讯飞要求 PCM 16k raw）；改为 **AudioRecord 录 PCM 16k 16bit**（.pcm）+ 上传 `audio/x-pcm` + 后端 FileService 放行 PCM 类型；实测链路打通（静音 PCM → 讯飞返回"语音识别失败"，真机有麦克风输入可正常识别）。
+7. **第 11 项 历史图表图例中文（feat bcfb4c7）**：HistoryResponse.getSensorTypeName/getUnitText 的 switch 键对齐后端枚举（TEMPERATURE/SOIL_MOISTURE 等），图表标题不再显示英文。
+8. **Web 第③项 用户列表技术员标签（feat bcfb4c7）**：UserList.vue roleLabel/roleTagType 补 TECHNICIAN → "技术员"。
+
+- **验证**：每项 gradle 离线构建 + 模拟器安装实测（预警规则新建/删除落库、多棚对比数据、告警处理落库、首启引导弹窗、5 棚设备展开、语音 400 消除、历史图例中文）；Web npm build 通过。
+- 已推送 GitHub（2258595..bbaba80，7 个提交）。

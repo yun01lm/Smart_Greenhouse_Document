@@ -126,3 +126,17 @@ related_docs: [PRD-002, API-005]
 | `MainActivity.java` | 修改 | onCreate 启动 MonitorService |
 
 > 验证：dumpsys activity services 确认 MonitorService 运行；已推送 GitHub。
+
+---
+
+## 后续变更（R43：预警规则管理 + 告警闭环，2026-08-29）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `ui/alert/AlertRuleActivity.java` | 新增 | 预警规则列表/新建/编辑/删除，复用 /alerts/rules CRUD |
+| `data/model/AlertRuleItem.java`/`AlertRuleRequest.java` | 新增 | 规则模型（条件 JSON 解析 min/max） |
+| `data/repository/AlertRepository.java` | 修改 | 新增 getAlertRules/create/update/delete + handleAlert |
+| `fragment_alert.xml`/`AlertFragment.java` | 修改 | 顶部新增"规则"入口；预警列表"处理"按钮（PUT /alerts/{id}/handle + 已处理置灰） |
+| `AlertItem.java`/`AlertAdapter.java` | 修改 | 增加 handled 字段与处理按钮渲染 |
+
+> 验证：规则新建/删除落库（DB 验证）、告警处理落库（handled=1）。

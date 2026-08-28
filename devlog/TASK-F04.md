@@ -136,3 +136,17 @@ GET    /api/qa/history?page=&size=  — 问答历史（分页）
 - **TASK-C01**（用户认证）：API鉴权依赖
 - **TASK-C09**（RAG问答模块）：后端RAG服务
 - **TASK-C10**（语音识别模块）：后端ASR服务
+
+---
+
+## 后续变更（R43：语音问答链路修复 + 历史图例中文 + 首启引导，2026-08-29）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `QaFragment.java` | 修改 | 录音 MediaRecorder(AAC) → AudioRecord PCM 16k 16bit（.pcm，与讯飞 ASR 格式一致） |
+| `QaRepository.java` | 修改 | 上传 media type audio/* → audio/x-pcm |
+| `backend FileService.java` | 修改 | ALLOWED_AUDIO_TYPES 放行 audio/x-pcm、audio/pcm |
+| `HistoryResponse.java` | 修改 | getSensorTypeName/getUnitText 键对齐后端枚举（图例不再显示 TEMPERATURE） |
+| `MainActivity.java` | 修改 | 首启欢迎引导（4 功能页介绍，仅首启弹一次） |
+
+> 验证：语音上传不再 400（静音 PCM 返回"语音识别失败"，链路打通）；历史图表标题中文；首启引导弹窗正常。

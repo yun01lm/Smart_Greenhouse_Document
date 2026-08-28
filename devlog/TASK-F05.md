@@ -188,3 +188,16 @@ GET    devices/actuators          — 获取设备列表 (greenhouseId)
 | 设备图标 | 重建 | 旧 APK 未含 ic_device_* 图标资源，重新构建安装后正常显示 |
 
 > 验证：场景卡片显示"水泵+风机联动"；设备行图标正常（绿色水滴/风机图标）。
+
+---
+
+## 后续变更（R43：设备列表 5 棚完整显示 + 多棚对比，2026-08-29）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `ControlFragment.java` | 修改 | rvDevices setHasFixedSize(false)+setNestedScrollingEnabled(false)，ScrollView 内 RecyclerView 完整展开（修复只显示前 3 个分组） |
+| `ui/compare/CompareActivity.java` | 新增 | 多棚对比：勾选 2-3 棚 → 实时数据并列对比表格 |
+| `activity_compare.xml` | 新增 | 对比页布局（大棚多选+结果表） |
+| `fragment_profile.xml`/`ProfileFragment.java` | 修改 | "我的"页新增"多棚对比"入口 |
+
+> 验证：5 个分组全部显示可滚动；对比表格显示真实数据（gh1 20.7°C / gh2 27.4°C 等）。
