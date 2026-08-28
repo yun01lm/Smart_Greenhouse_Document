@@ -104,3 +104,14 @@ GET /api/v1/sensors/history?greenhouseId=&sensorType=&startTime=&endTime=&aggreg
 
 - **TASK-C01**（用户认证）：API鉴权依赖
 - **TASK-C05**（时序数据服务）：后端InfluxDB查询
+
+---
+
+## 后续变更（R39：历史数据 400 修复——传感器类型枚举对齐，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `HistoryViewModel.java` | 修改 | 传感器类型列表对齐后端枚举（TEMPERATURE/HUMIDITY/LIGHT/CO2/SOIL_TEMP/SOIL_MOISTURE/SOIL_PH/WIND_SPEED），移除 TEMP/O2/SOIL_HUMIDITY/EC/N/P/K |
+
+> 根因：APP 类型代码与后端不一致，默认"空气温度"(TEMP) 请求即 400。
+> 验证：历史数据图表正常渲染曲线（截图 v2-history），不再报"加载历史数据失败"。

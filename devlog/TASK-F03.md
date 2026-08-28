@@ -96,3 +96,13 @@ related_docs: [PRD-003, API-007]
 |----------|------|------|
 | POST /api/v1/diagnosis/recognize | 图片诊断 | @Multipart 上传图片+greenhouseId |
 | GET /api/v1/diagnosis/records | 诊断历史 | 分页查询（greenhouseId/page/size） |
+
+---
+
+## 后续变更（R39：诊断结果时间格式化，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `DiagnosisResultActivity.java` | 修改 | createdAt ISO→易读格式（2026-08-10T01:11:43.199186 → 2026-08-10 01:11） |
+
+> 验证：诊断结果页时间正常显示。

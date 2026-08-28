@@ -102,3 +102,15 @@ related_docs: [PRD-002, API-005]
 | GET /api/v1/alerts/thresholds?greenhouseId={id} | 获取阈值 | 当前大棚自定义阈值 |
 | POST /api/v1/alerts/thresholds | 设置阈值 | 创建或更新阈值 |
 | DELETE /api/v1/alerts/thresholds/{id} | 删除阈值 | 删除自定义阈值 |
+
+---
+
+## 后续变更（R39：预警详情时间格式化 + 阈值页枚举对齐，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `AlertDetailActivity.java` | 修改 | 触发时间 ISO→易读格式（2026-08-07 08:09）；触发参数传感器类型中文化 |
+| `ThresholdSettingsActivity.java` | 修改 | DEFAULT_SENSOR_TYPES 对齐后端 8 类枚举（移除 O2/EC） |
+| `ThresholdAdapter.java` | 修改 | NAME_MAP 对齐后端枚举，中文标签正确（"O₂浓度"文案问题消失） |
+
+> 验证：预警详情触发时间显示"2026-08-07 08:09"；阈值页 8 类中文标签（截图 v6-threshold）。

@@ -4380,3 +4380,48 @@ pm run build 通过；浏览器逐页截图验证（登录/管理员总览/棚�
 
 ### 说明
 - 已推送 GitHub（commit cc92eea，3 文件，+51/-12）。
+
+
+---
+
+## 2026-08-28（R39：APP 端 8 项功能修复——修改密码/历史数据400/设备图标/场景名/卡片标题/时间格式/阈值枚举/专家头像）
+
+- **时间**：2026-08-28
+- **范围**：APP 端（Android 原生 Java，10 个文件）
+- **需求背景**：APP 端功能审查（模拟器实机走查）发现 8 项"有但不能用"的问题，经用户批准后全部修复。
+
+1. **修改密码**（`ProfileFragment.java`）：此前只有 UI 无点击绑定（btn_change_password 无监听），补绑定 + 原生对话框（原密码/新密码/确认，8 位含字母数字校验），调后端 `PUT /auth/password`（AuthRepository 已有实现）；
+2. **历史数据 400**（`HistoryViewModel.java`）：传感器类型代码与后端枚举不一致（APP 用 TEMP/O2/SOIL_HUMIDITY/EC/N/P/K，后端是 TEMPERATURE/CO2/SOIL_MOISTURE 等），默认"空气温度"请求即 400；已对齐后端 8 类枚举；
+3. **设备图标**：旧 APK 未包含 ic_device_* 图标资源，重新构建安装后正常显示；
+4. **场景名 fnvcc**（`SceneAdapter.java`）：加 SCENE_NAME_MAP 编码映射（fnvcc → 水泵+风机联动，与 Web 端一致）；
+5. **卡片标题英文**（`SensorAdapter.java`）：NAME_MAP 键对齐后端枚举（TEMPERATURE→空气温度等），预警详情触发参数同步中文化；
+6. **ISO 时间格式化**（`AlertDetailActivity.java`/`DiagnosisResultActivity.java`）：2026-08-07T08:09:02 → 2026-08-07 08:09，毫秒截断；
+7. **阈值页枚举/文案**（`ThresholdSettingsActivity.java`/`ThresholdAdapter.java`）：移除后端不存在的 O2/EC 类型，对齐 8 类枚举，中文标签正确（"O₂浓度"文案问题一并消失）；
+8. **专家头像占位**（`ExpertAdapter.java`/`item_expert.xml`）：固定"专"字 → 动态显示姓名首字（李/王/赵）。
+
+- **验证**：`gradle assembleDebug --offline` 构建成功（39s）→ `adb install` 模拟器逐项实测，8 项全部通过（截图 v1-v6）。
+- 已推送 GitHub（commit 4d816f2，10 文件，+161/-35）。
+
+---
+
+## 2026-08-28（R40：APP 端 UI 重构三期——现代农业绿色彩体系/看板与入口重绘/深色模式与品牌图标）
+
+- **时间**：2026-08-28
+- **范围**：APP 端（res/ 资源层：colors/styles/themes/drawable/layout）
+- **需求背景**：用户对 APP 图形/配色/按钮图案不满意（"过时老土"），批准 UI 重构三期计划，分步执行。
+
+### 一期：色彩体系 + 设计地基（commit 03b5d31）
+- `colors.xml` 重构为**现代农业绿体系**：主色 #4CAF50 → #43A047、背景 #F5F5F5 → 米白 #FAFAF7、新增 text_primary/on_primary/nav_checked 等 tokens；全部布局用 @color 引用，改值全局生效；
+- 新建 `styles.xml`：Style.Card（16dp 圆角+柔和阴影）、Style.ButtonPrimary（胶囊按钮）、TextAppearance.Metric（等宽数字）、Style.HealthCircle；底部导航选中色升级。
+
+### 二期：关键界面重绘（commit 405b4bf）
+- 看板传感器卡片（`item_sensor_card.xml`）：16dp 圆角 + 3dp 阴影、圆角状态条、22sp 等宽数字、深色文字；
+- 功能入口图标底升级柔和渐变（绿/蓝/橙），入口图标填主色；
+- 登录页渐变改为 token 引用（新绿渐变自动生效）。
+
+### 三期：深色模式 + 品牌（commit b566dbb）
+- **深色模式**：新建 `values-night/colors.xml` 全量深色令牌，主题改 DayNight + forceDarkAllowed=false；模拟器双模式实测——背景/卡片/文字/绿色元素全部正确切换，无白色残留；
+- **启动图标重绘**：渐变绿底 + 圆润白色大棚+棚内植物图形（替代原纯绿底+简单房子）。
+
+- **验证**：三期各提交 `gradle assembleDebug --offline` 构建成功 → `adb install` 模拟器截图验证（亮/暗双模式）。
+- 已推送 GitHub（cc92eea..b566dbb）。

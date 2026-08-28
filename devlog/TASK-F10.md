@@ -153,3 +153,13 @@ PENDING ──同意──→ APPROVED (7天有效期) ──到期──→ EXP
 - 用户明确要求：功能不裁剪，全部完整开发
 - 后续联调：需要后端 C16（实时聊天）和 C17（专家授权）模块运行
 - 步骤31审查修复：补充缺失的 POST /expert/authorize/request API 封装（RequestAuthorizationRequest + requestAuthorization 方法）
+
+---
+
+## 后续变更（R39：专家头像姓名首字，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `ExpertAdapter.java` / `item_expert.xml` | 修改 | 固定"专"字占位 → 动态显示姓名首字（李/王/赵） |
+
+> 验证：专家列表头像显示姓名首字（截图 v5-expert）。

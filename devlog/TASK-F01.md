@@ -123,3 +123,16 @@ Android APP 编译通过（app-debug.apk, 7.2MB）。MVVM 架构完整：View(Ac
 - **fragment_dashboard.xml**: 顶部健康评分 CardView 增加 id（card_health_score）和 clickable 属性
 - **DashboardFragment.java**: 健康评分卡片 → 可点击 → Intent 跳转 HealthActivity
 - 变更原因：新增F08多模态健康评分详情页入口
+
+---
+
+## 后续变更（R39/R40：看板传感器卡片中文化 + UI 一期/二期看板重绘，2026-08-28）
+
+| 文件路径 | 修改类型 | 变更说明 |
+|----------|----------|----------|
+| `SensorAdapter.java` | 修改 | NAME_MAP 键对齐后端枚举（TEMPERATURE→空气温度、SOIL_MOISTURE→土壤湿度），看板卡片标题不再显示英文枚举 |
+| `item_sensor_card.xml` | 重写 | 16dp 圆角+柔和阴影、圆角状态条、22sp 等宽数字、深色文字 |
+| `colors.xml` / `styles.xml` | 重写 | 现代农业绿色彩体系 + 统一卡片/按钮/数字样式（UI 重构一期） |
+| `bg_icon_chip_*.xml` | 修改 | 功能入口图标底升级柔和渐变（UI 重构二期） |
+
+> 验证：模拟器截图确认卡片标题中文、看板现代感提升（review_shots/app/p1、p2）。
