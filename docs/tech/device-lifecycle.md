@@ -190,3 +190,15 @@ mosquitto_pub -h localhost -u greenhouse -P greenhouse_dev \
 1. 缓冲是否补写 InfluxDB（P4）：默认做；若希望"注册前数据不展示"，可不补写只记录日志。
 2. Web「待注册设备」入口（P3）是否本期做：默认做；最小可行版可只做 P1+P2（后端+固件），前端后置。
 3. 每设备独立 token（二期）是否需要提前预留固件字段（如 `DEVICE_TOKEN` 占位）。
+
+## 8. 实施记录（2026-08-30，R44 已完成）
+
+本方案已按上文设计全量实施（代码提交 22bd4ec，开发日志见 devlog/DEVLOG.md R44）：
+
+- 固件预注册：firmwares 表 + 批量预注册 API + Web 固件管理页（管理员）；
+- 用户绑定：设备创建填固件ID，校验存在/未绑定/类型一致，SN 自动生成 `GH{大棚ID}-{序号}`，删除自动解绑；
+- 通信：MQTT 双订阅，新固件走 `device/{firmwareId}/data` 上报、`device/{firmwareId}/command` 收指令，未绑定固件丢弃+日志；旧格式保留兼容；
+- 存量迁移：选 B 方案一次性迁移，38 台存量设备建档绑定（00000001~00000038，`tools/migrate_firmware_id.sql`）；
+- 固件：`firmware/greenhouse_esp32`（WiFiManager 现场配网，只填 WiFi，大棚ID无需填写）+ 标签模板 `tools/device_label.html`；
+- 回归：`tools/test_firmware_flow.py` 14/14 通过；顺带修复健康评分 NaN 500 与日汇总 Flux 分号编译错误。
+- 待办：每设备独立 token 强认证（二期）；APP 端「待注册设备」/扫码绑定（二期）。
