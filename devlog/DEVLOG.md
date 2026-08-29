@@ -4492,3 +4492,28 @@ pm run build 通过；浏览器逐页截图验证（登录/管理员总览/棚�
 
 - **验证**：每项 gradle 离线构建 + 模拟器安装实测（预警规则新建/删除落库、多棚对比数据、告警处理落库、首启引导弹窗、5 棚设备展开、语音 400 消除、历史图例中文）；Web npm build 通过。
 - 已推送 GitHub（2258595..bbaba80，7 个提交）。
+
+
+---
+
+## 2026-08-30（R44：固件ID预注册 + 用户绑定生成SN 全链路——后端/Web/APP/模拟器/固件模板/存量迁移）
+
+- **时间**：2026-08-30
+- **范围**：后端 + Web + APP + 模拟器 + ESP32固件模板 + 存量数据迁移
+- **需求背景**：设备接入改为「出厂预注册固件ID（8位数字，全局唯一）→ 烧录印标签 → 用户照标签绑定时系统自动生成SN（GH{大棚ID}-{序号}）」，固件/配网/上报/命令链路不再依赖数据库自增ID，大棚ID彻底从固件链路消失（MQTT按固件ID路由 `device/{firmwareId}/data` 与 `/command`）。
+
+1. **后端-数据模型（feat 22bd4ec）**：新建 firmwares 固件档案表（firmware_id CHAR(8) PK / device_type / sensor_type / firmware_version / batch_no / status(UNBOUND|BOUND) / bound_device_id）；devices 表新增 firmware_id 列 + 全局唯一索引。
+2. **后端-固件API（feat 22bd4ec）**：`POST /api/v1/admin/firmwares/batch` 批量预注册（按最大ID+1 生成 00000001 起）；`GET /admin/firmwares` 列表（按状态筛选）+ `stats/unbound-count` 未绑定统计。
+3. **后端-设备绑定（feat 22bd4ec）**：DeviceRequest 加 firmwareId（8位数字必填）；createDevice 校验固件存在/未绑定/类型一致后绑定，SN 自动生成 `GH{大棚ID}-{序号}`（同大棚第N台）；删除设备自动解绑固件回 UNBOUND；更新时固件ID不可改。
+4. **后端-MQTT双订阅（feat 22bd4ec）**：MqttSubscriber 同时订阅新格式 `device/+/data` 与旧格式 `greenhouse/+/device/+`；新格式按 firmwareId 反查设备定位大棚，未绑定固件丢弃+WARN日志；控制指令下发改发 `device/{firmwareId}/command`（存量无固件ID设备回退旧topic）；传感器上报/控制器心跳均支持。
+5. **Web端（feat 22bd4ec）**：设备管理页添加表单改「固件ID输入（8位校验）+ 设备编号自动生成提示」，列表加固件ID列；新增固件管理页（批量预注册表单 + 固件列表 + 未绑定统计 + 状态筛选），管理员菜单+路由；AdminDevicePage 同步。
+6. **APP端（feat 22bd4ec）**：DeviceInfo 增加 firmwareId 字段（Gson）；设备列表/控制页回归正常（新SN格式显示、数据流、健康评分）。
+7. **模拟器与脚本（feat 22bd4ec）**：device_simulator.py 切新协议（`device/{firmwareId}/data` + payload 带 firmwareId）；devices.json 38台设备补 firmware_id；seed_data.sql / init_seed_data.sql 追加固件建档段（幂等）。
+8. **存量迁移（feat 22bd4ec，选B一次性迁移）**：tools/migrate_firmware_id.sql 为 38 台存量设备按 id 升序建档绑定（00000001~00000038，批次 MIGRATE-20260829），devices.firmware_id 全量回填；迁移后 38/38 绑定，双订阅过渡期内老链路照常工作。
+9. **ESP32固件模板（feat 22bd4ec）**：firmware/greenhouse_esp32（Arduino）——WiFiManager 现场配网（只填WiFi，大棚ID无需填写）+ 固件ID写死 + 周期上报 + 订阅命令驱动继电器 + 长按BOOT清除配网重配。
+10. **标签模板（feat 22bd4ec）**：tools/device_label.html（58mm 标签：固件ID + 型号 + 二维码，可打印）。
+11. **回归测试（feat 22bd4ec）**：tools/test_firmware_flow.py 14/14 通过（绑定/SN自动生成/重复绑定拒绝/固件不存在拒绝/类型不匹配拒绝/MQTT新格式上报→ONLINE+数据入库/未绑定丢弃/控制器心跳新格式/删除解绑）；命令下发实测收到 `device/{firmwareId}/command`。
+12. **顺带修复（feat 22bd4ec）**：① 健康评分接口 500——InfluxDB 数据异常导致 envScore/visualScore 为 NaN，BigDecimal.valueOf(NaN) 抛 NumberFormatException（Math.max(0,NaN) 会穿透裁剪），service 层加 isFinite 防御按默认80分处理；② SensorDailySummary 启动回填 Flux 编译失败（option location 语句误带分号），去掉分号后日汇总正常生成。
+
+- **验证**：后端 mvn 编译+重启；API 全链路（预注册/绑定/错误场景/上报/控制）14/14；Web 实测管理员固件管理页+设备页固件ID、棚主添加设备自动生成 GH1-10；APP 模拟器安装实测（看板健康分72/设备控制页正常）；dashboard 健康评分不再500、日汇总回填成功。
+- 已推送 GitHub（bbaba80..22bd4ec）。
