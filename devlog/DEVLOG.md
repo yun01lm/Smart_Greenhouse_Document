@@ -4517,3 +4517,22 @@ pm run build 通过；浏览器逐页截图验证（登录/管理员总览/棚�
 
 - **验证**：后端 mvn 编译+重启；API 全链路（预注册/绑定/错误场景/上报/控制）14/14；Web 实测管理员固件管理页+设备页固件ID、棚主添加设备自动生成 GH1-10；APP 模拟器安装实测（看板健康分72/设备控制页正常）；dashboard 健康评分不再500、日汇总回填成功。
 - 已推送 GitHub（bbaba80..22bd4ec）。
+
+
+---
+
+## 2026-08-30（R45：大棚管理全链路——棚主自主管理 + 管理员代管 + 删除级联清理）
+
+- **时间**：2026-08-30
+- **范围**：后端 + Web + APP
+- **需求背景**：后端大棚 CRUD 接口早已就绪（POST/PUT/DELETE /api/v1/greenhouses，仅棚主、上限10个、名称唯一、五级地区），但 Web/APP 均无任何管理入口（只有查询/切换），用户无法新增大棚。同时发现删除大棚无关联校验，直接删会残留/报错。
+
+1. **后端-删除级联清理（feat eea2388）**：deleteGreenhouse 按依赖顺序清理该大棚全部关联：咨询会话及消息 → 设备（逐个固件解绑回 UNBOUND+清 boundDeviceId）→ 设备分组（连带 members）→ 预警规则/自定义阈值/预警记录 → 场景 → 作物周期 → 诊断记录 → 健康评估/长势评估 → 传感器日汇总 → 数据授权/员工权限 → InfluxDB 时序数据（DeleteAPI 按 greenhouse_id tag 删）→ 删除大棚本体。14 个 Repository 补充 deleteByGreenhouseId 派生方法。
+2. **后端-管理员代管（feat eea2388）**：createGreenhouse/updateGreenhouse/deleteGreenhouse 增加角色参数——OWNER 操作自己的大棚（越权仍 400 拒绝）；ADMIN 可代建（GreenhouseRequest.ownerId 必填，目标须为棚主）、代改、代删任意大棚。
+3. **Web-棚主大棚管理页（feat eea2388）**：新增 views/owner/GreenhouseManage.vue——大棚列表（名称/作物/五级地区/位置/创建时间）+ 新增大棚/编辑/删除弹窗（RegionCascader 五级地区级联复用）+ 删除级联提示；路由 /greenhouses（OWNER）+ 棚主菜单「大棚管理」；棚主视角（管理员代看）下按 viewStore.ownerId 过滤列表、代建带 ownerId。
+4. **Web-管理员代管（feat eea2388）**：棚主管理页「查看大棚」弹窗加操作列（编辑/删除）+「新增大棚」按钮（代建给该棚主），表单同款级联。
+5. **APP-大棚管理（feat eea2388）**：新增 GreenhouseManageActivity（列表卡片：名称/作物标签/地区/位置 + 编辑/删除）+ 新增/编辑弹窗（名称/作物/省市区乡镇村/位置 8 字段）+ 删除确认（级联提示）；GreenhouseApiService 补 createGreenhouse/updateGreenhouse/deleteGreenhouse + GreenhouseRequest model；Greenhouse model 补 town/village；「我的」页加大棚管理入口（棚主专属，RoleAdapter 控制显隐）。
+6. **回归测试（feat eea2388）**：后端 API 端到端 8 项（管理员代建指定 ownerId/代编辑/归属正确/棚主自建/棚主自删/管理员级联删/删除后不存在/棚主越权编辑他人大棚被拒 400）；Web 浏览器实测（管理员代建→owner01名下可见、棚主视角菜单+页面、视角过滤不混入他人大棚、删除确认+级联删成功）；APP 模拟器实测（我的页入口、新增大棚弹窗、创建成功、删除确认+级联删成功、owner01 登录 5 大棚列表完整显示）。
+
+- **验证**：后端 mvn 编译+重启；Web Vite HMR 实测全流程；APP gradle 离线构建 + 模拟器安装实测。
+- 已推送 GitHub（16e60f7..eea2388）。
