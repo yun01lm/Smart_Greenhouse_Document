@@ -4536,3 +4536,20 @@ pm run build 通过；浏览器逐页截图验证（登录/管理员总览/棚�
 
 - **验证**：后端 mvn 编译+重启；Web Vite HMR 实测全流程；APP gradle 离线构建 + 模拟器安装实测。
 - 已推送 GitHub（16e60f7..eea2388）。
+
+
+---
+
+## 2026-08-30（R46：用户信息完善——五级地区自由填写 + 专家领域/归属棚主可编辑）
+
+- **时间**：2026-08-30
+- **范围**：后端 + Web
+- **需求背景**：管理员创建用户时无地址可填（User 实体无地区字段，列表地区列仅按大棚聚合推导）；用户创建后信息无处编辑（编辑表单与后端 UpdateUserRequest 仅有姓名/手机号/角色/状态）。用户明确要求：地址不限制在系统地区库，改为**五个分级输入框自由填写**。
+
+1. **后端-用户地区字段（feat 11642cb）**：User 实体加五级地区 province/city/district/town/village（ddl-auto:update 自动加列）；CreateUserRequest 补地区 5 字段 + expertSpecialty（专家领域）；UpdateUserRequest 补地区 5 字段 + expertSpecialty + ownerId（员工/技术员归属棚主可改，校验目标必须是棚主）。
+2. **后端-地区双兼容（feat 11642cb）**：用户列表 regionText 与地区筛选改为「用户自身地区优先，为空时回退大棚聚合地区」；AdminOwnerController 棚主管理列表同步（matchOwnerRegion/buildOwnerRegionText）。
+3. **Web-用户表单（feat 11642cb）**：新增/编辑用户「所在地区」由级联选择器改为**五个分级输入框**（省/市/区/乡镇/村，自由填写）；编辑对话框补专家领域（专家角色显示）、归属棚主（员工/技术员显示并可改）；列表地区列直接显示用户地区。
+4. **回归测试（feat 11642cb）**：后端 API 8 项（地区更新落库/regionText 正确/按省份筛选命中/专家领域更新/员工归属棚主修改/创建用户带地区/清理测试用户/棚主管理页地区显示）；Web 浏览器实测（五框回填 owner01 地区、修改村字段保存成功、列表更新、无自身地区的员工回退显示大棚地区）。
+
+- **验证**：后端 mvn 编译+重启（ddl-auto 自动加列）；Web Vite HMR 实测全流程。
+- 已推送 GitHub（eea2388..11642cb）。
